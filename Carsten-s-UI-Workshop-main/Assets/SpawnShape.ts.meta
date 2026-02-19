@@ -1,0 +1,62 @@
+- !<AssetImportMetadata/af2373cd-b886-4b18-91bd-2c299cf0a1de>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 675b7f3d-5d1d-4c5b-aa00-7f1512e67d92
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 675b7f3d-5d1d-4c5b-aa00-7f1512e67d92
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 2928175d-c33f-41af-a835-8e79ffd4de8c
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/2928175d-c33f-41af-a835-8e79ffd4de8c>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 193ff8d1-17fb-4db4-823a-3e07fa964b87
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    boxMesh: false
+    cubeButton: false
+    cylinderButton: false
+    cylinderMesh: false
+    sliderScaleController: false
+    sphereButton: false
+    sphereMesh: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - cylinderMesh: !<reference.RenderMeshVisual> 00000000-0000-0000-0000-000000000000
+      boxMesh: !<reference.RenderMeshVisual> 00000000-0000-0000-0000-000000000000
+      sphereMesh: !<reference.RenderMeshVisual> 00000000-0000-0000-0000-000000000000
+      cylinderButton: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      sphereButton: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
+      cubeButton: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
+      sliderScaleController: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.RenderMeshVisual cylinderMesh
+    - // @input Component.RenderMeshVisual boxMesh
+    - // @input Component.RenderMeshVisual sphereMesh
+    - // @input AssignableType cylinderButton
+    - // @input AssignableType_1 sphereButton
+    - // @input AssignableType_2 cubeButton
+    - // @input AssignableType_3 sliderScaleController

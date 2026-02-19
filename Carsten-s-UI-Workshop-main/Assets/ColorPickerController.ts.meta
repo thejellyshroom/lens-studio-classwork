@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/eff47b94-9249-4ee6-960f-bd874db297c5>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 776f3138-36d1-4f6e-ab9d-a3f42c27ea04
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 776f3138-36d1-4f6e-ab9d-a3f42c27ea04
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 2b9d9cd2-ba59-42a0-8d24-41b482d9f8ae
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/2b9d9cd2-ba59-42a0-8d24-41b482d9f8ae>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 3a9f7b1b-9ff9-4f98-9317-b00cce52286c
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    continuousUpdate: false
+    sampleColorIndicator: false
+    spawnShape: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - sampleColorIndicator: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      spawnShape: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      continuousUpdate: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input SceneObject sampleColorIndicator {"hint":"The Sample Color Indicator object that shows the selected color"}'
+    - // @input AssignableType spawnShape
+    - '// @input bool continuousUpdate = true {"hint":"Update color continuously (real-time) or only on demand"}'

@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/d1ebd1f4-6798-4421-8712-c749821baff2>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> bf794151-afea-40c0-8a9e-9565345ea846
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> bf794151-afea-40c0-8a9e-9565345ea846
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 11b399e2-4a63-482e-bc5f-8005a73ce15f
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/11b399e2-4a63-482e-bc5f-8005a73ce15f>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 398e1cef-86d4-49c3-8208-ae2baca2162b
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    maxScale: false
+    minScale: false
+    slider: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - slider: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      minScale: !<float> 1.000000
+      maxScale: !<float> 10.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input AssignableType slider
+    - // @input float minScale = 1
+    - // @input float maxScale = 10

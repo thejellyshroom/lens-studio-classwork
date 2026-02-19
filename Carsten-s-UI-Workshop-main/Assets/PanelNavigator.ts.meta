@@ -1,0 +1,59 @@
+- !<AssetImportMetadata/a4a3c7a6-cd75-4fcb-ac6d-fb06152cec8b>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> c7e86254-3027-4cff-847b-dde600e8c215
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> c7e86254-3027-4cff-847b-dde600e8c215
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 3cf6093f-9a34-47ef-a77a-c38898028582
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/3cf6093f-9a34-47ef-a77a-c38898028582>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 7e8ca4b7-b954-4c55-a30f-53a202297c47
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    changeColorPanel: false
+    changeSizePanel: false
+    colorPickerController: false
+    nextButton: false
+    nextButton2: false
+    spawnShapePanel: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - spawnShapePanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      changeSizePanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      changeColorPanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      nextButton: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      nextButton2: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
+      colorPickerController: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input SceneObject spawnShapePanel
+    - // @input SceneObject changeSizePanel
+    - // @input SceneObject changeColorPanel
+    - // @input AssignableType nextButton
+    - // @input AssignableType_1 nextButton2
+    - // @input AssignableType_2 colorPickerController
