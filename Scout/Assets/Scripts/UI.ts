@@ -211,9 +211,22 @@ export class UI extends BaseScriptComponent {
 
   private show(tr: Transform) {
     const localPos = tr.getLocalPosition()
+    localPos.x = 0
     localPos.y = -5
+    localPos.z = 0
     tr.setLocalPosition(localPos)
+    this.centerScreenTransform(tr.getSceneObject())
     this.backplateSo.enabled = true
+  }
+
+  private centerScreenTransform(so: SceneObject) {
+    const st = so.getComponent("Component.ScreenTransform") as ScreenTransform
+    if (st && st.anchors) {
+      st.anchors.setCenter(new vec2(0, 0))
+    }
+    for (let i = 0; i < so.getChildrenCount(); i++) {
+      this.centerScreenTransform(so.getChild(i))
+    }
   }
 
   private tryHideCurrentActive() {

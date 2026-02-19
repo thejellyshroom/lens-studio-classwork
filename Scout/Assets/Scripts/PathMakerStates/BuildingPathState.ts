@@ -171,12 +171,16 @@ export class BuildingPathState implements IPathMakerState {
     this.pathmakingPlayerFeedback.stop()
   }
 
+  private static readonly spawnExtraForwardCm = 200
+
   private spawnObjectInSpace() {
     if (!this.pfbSpawnObject) return
-    const groundPos = LensInitializer.getInstance().getPlayerGroundPos()
-    const flatForward = LinearAlgebra.flatNor(this.cameraTransform.forward)
-    const spawnPos = groundPos.add(flatForward.uniformScale(this.spawnOffsetInFront))
-    const spawnRot = quat.lookAt(flatForward, vec3.up())
+    const camPos = this.cameraTransform.getWorldPosition()
+    const groundY = LensInitializer.getInstance().getPlayerGroundPos().y
+    const flatAhead = LinearAlgebra.flatNor(this.cameraTransform.back)
+    const totalForward = this.spawnOffsetInFront + BuildingPathState.spawnExtraForwardCm
+    const spawnPos = new vec3(camPos.x, groundY, camPos.z).add(flatAhead.uniformScale(totalForward))
+    const spawnRot = quat.lookAt(flatAhead, vec3.up())
     const so = this.pfbSpawnObject.instantiate(null)
     so.getTransform().setWorldPosition(spawnPos)
     so.getTransform().setWorldRotation(spawnRot)
