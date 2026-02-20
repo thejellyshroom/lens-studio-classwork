@@ -29,6 +29,7 @@
     camObj: false
     camObjOffset: false
     finalPathDistText: false
+    microphoneRecorder: false
     pathDistText: false
     pathRmv: false
     pathmakingPlayerFeedback: false
@@ -61,6 +62,7 @@
       placingStartFinishLinesForwardDisplace: !<float> 200.000000
       pfbSpawnObject: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
       spawnOffsetInFront: !<float> 80.000000
+      microphoneRecorder: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -78,3 +80,4 @@
     - // @input float placingStartFinishLinesForwardDisplace = 200
     - // @input Asset.ObjectPrefab pfbSpawnObject
     - // @input float spawnOffsetInFront = 80
+    - // @input AssignableType_3 microphoneRecorder

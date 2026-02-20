@@ -13,6 +13,7 @@ import {LookAtFloorBehavior} from "../PathPrevewBehaviors/LookAtFloorBehavior"
 import {PaintOnFloorBehavior} from "../PathPrevewBehaviors/PaintOnFloorBehavior"
 import {PlayerPaceCalculator} from "../PlayerPaceCalculator"
 import {UI} from "../UI"
+import {ArtifactRecording} from "../ArtifactRecording"
 import {IPathMakerState} from "./IPathMakerState"
 
 export class BuildingPathState implements IPathMakerState {
@@ -45,7 +46,8 @@ export class BuildingPathState implements IPathMakerState {
       splinePoints: {position: vec3; rotation: quat}[]
     ) => void,
     protected pfbSpawnObject: ObjectPrefab | undefined,
-    protected spawnOffsetInFront: number
+    protected spawnOffsetInFront: number,
+    protected microphoneRecorder: any
   ) {
     this.startTransform = this.startObject.getTransform()
   }
@@ -60,9 +62,16 @@ export class BuildingPathState implements IPathMakerState {
   protected loopClickedRemover: (() => void) | undefined
   protected resetClickedRemover: (() => void) | undefined
   protected spawnClickedRemover: (() => void) | undefined
+  protected recordVoiceConfirmRemover: (() => void) | undefined
+  protected recordVoiceRerecordRemover: (() => void) | undefined
+  protected recordVoiceCancelRemover: (() => void) | undefined
+  protected recordVoiceDoneRemover: (() => void) | undefined
   protected updateEvent: SceneEvent | undefined
   protected trailHeadTransform: Transform | undefined
   protected spawnedObjects: SceneObject[] = []
+  protected pendingArtifact: {spawnPos: vec3; spawnRot: quat} | null = null
+  /** Recording captured when user taps Done; used when they tap Confirm so each artifact gets the right copy. */
+  protected pendingRecordingFrames: any[] | null = null
 
   // To clear on start()
   protected prevCameraPositionForVisual: vec3 | undefined
@@ -149,7 +158,7 @@ export class BuildingPathState implements IPathMakerState {
 
     if (this.pfbSpawnObject) {
       this.spawnClickedRemover = this.ui.spawnObjectClicked.add(() => {
-        this.spawnObjectInSpace()
+        this.onSpawnObjectRequested()
       })
     }
 
@@ -173,7 +182,7 @@ export class BuildingPathState implements IPathMakerState {
 
   private static readonly spawnExtraForwardCm = 200
 
-  private spawnObjectInSpace() {
+  private onSpawnObjectRequested() {
     if (!this.pfbSpawnObject) return
     const camPos = this.cameraTransform.getWorldPosition()
     const groundY = LensInitializer.getInstance().getPlayerGroundPos().y
@@ -181,10 +190,123 @@ export class BuildingPathState implements IPathMakerState {
     const totalForward = this.spawnOffsetInFront + BuildingPathState.spawnExtraForwardCm
     const spawnPos = new vec3(camPos.x, groundY, camPos.z).add(flatAhead.uniformScale(totalForward))
     const spawnRot = quat.lookAt(flatAhead, vec3.up())
+
+    if (this.microphoneRecorder && this.ui.recordVoicePackageUI) {
+      this.pendingArtifact = {spawnPos, spawnRot}
+      this.ui.showRecordVoicePackageUI()
+      this.subscribeRecordVoiceEvents()
+    } else {
+      this.placeArtifactAt(spawnPos, spawnRot, null)
+    }
+  }
+
+  private subscribeRecordVoiceEvents() {
+    this.recordVoiceConfirmRemover = this.ui.recordVoiceConfirmClicked.add(() => {
+      this.onRecordVoiceConfirm()
+    })
+    this.recordVoiceRerecordRemover = this.ui.recordVoiceRerecordClicked.add(() => {
+      this.ui.showRecordVoicePackageUI()
+    })
+    this.recordVoiceCancelRemover = this.ui.recordVoiceCancelClicked.add(() => {
+      this.onRecordVoiceCancel()
+    })
+    this.recordVoiceDoneRemover = this.ui.recordVoiceDoneClicked.add(() => {
+      this.pendingRecordingFrames = this.microphoneRecorder != null ? this.microphoneRecorder.getRecordedFramesCopy() : []
+      print("[BuildingPathState] Done: captured " + (this.pendingRecordingFrames ? this.pendingRecordingFrames.length : 0) + " frames")
+    })
+  }
+
+  private unsubscribeRecordVoiceEvents() {
+    this.recordVoiceConfirmRemover?.()
+    this.recordVoiceConfirmRemover = undefined
+    this.recordVoiceRerecordRemover?.()
+    this.recordVoiceRerecordRemover = undefined
+    this.recordVoiceCancelRemover?.()
+    this.recordVoiceCancelRemover = undefined
+    this.recordVoiceDoneRemover?.()
+    this.recordVoiceDoneRemover = undefined
+  }
+
+  private onRecordVoiceConfirm() {
+    try {
+      if (!this.pendingArtifact || !this.pfbSpawnObject) return
+      const frames = this.pendingRecordingFrames != null ? this.pendingRecordingFrames : (this.microphoneRecorder != null ? this.microphoneRecorder.getRecordedFramesCopy() : [])
+      this.pendingRecordingFrames = null
+      print("[BuildingPathState] Confirm: placing artifact with " + (frames ? frames.length : 0) + " frames")
+      this.placeArtifactAt(this.pendingArtifact.spawnPos, this.pendingArtifact.spawnRot, frames)
+      this.pendingArtifact = null
+    } finally {
+      this.unsubscribeRecordVoiceEvents()
+      this.ui.hideRecordVoice()
+      this.ui.showDuringPathCreationUi()
+    }
+  }
+
+  private onRecordVoiceCancel() {
+    this.pendingArtifact = null
+    this.pendingRecordingFrames = null
+    this.unsubscribeRecordVoiceEvents()
+    this.ui.hideRecordVoice()
+    this.ui.showDuringPathCreationUi()
+  }
+
+  private placeArtifactAt(spawnPos: vec3, spawnRot: quat, recordingFrames: any[] | null) {
+    if (!this.pfbSpawnObject) return
     const so = this.pfbSpawnObject.instantiate(null)
     so.getTransform().setWorldPosition(spawnPos)
     so.getTransform().setWorldRotation(spawnRot)
+    if (recordingFrames && recordingFrames.length > 0) {
+      const comp = this.getArtifactRecordingComponent(so)
+      if (comp) {
+        comp.setFrames(recordingFrames)
+        if (this.microphoneRecorder) comp.setMicrophoneRecorder(this.microphoneRecorder)
+        print("[BuildingPathState] placeArtifactAt: set " + recordingFrames.length + " frames on ArtifactRecording")
+      } else {
+        print("[BuildingPathState] placeArtifactAt: no ArtifactRecording component on prefab instance")
+      }
+    }
     this.spawnedObjects.push(so)
+  }
+
+  /** Finds ArtifactRecording on the prefab instance, root or any child (must exist on prefab; we do not createComponent). */
+  private getArtifactRecordingComponent(so: SceneObject): ArtifactRecording | null {
+    const byName = this.findArtifactRecordingByTypeName(so, 0, 10)
+    if (byName) return byName
+    return this.findArtifactRecordingByDuckType(so, 0, 10)
+  }
+
+  private findArtifactRecordingByTypeName(so: SceneObject, depth: number, maxDepth: number): ArtifactRecording | null {
+    if (depth > maxDepth) return null
+    const soAny = so as any
+    for (const name of ["ArtifactRecording", "Script.ArtifactRecording"]) {
+      const comp = soAny.getComponent(name) as ArtifactRecording | null
+      if (comp) return comp
+    }
+    for (let i = 0; i < so.getChildrenCount(); i++) {
+      const found = this.findArtifactRecordingByTypeName(so.getChild(i), depth + 1, maxDepth)
+      if (found) return found
+    }
+    return null
+  }
+
+  /** Fallback: find any component that has setFrames/getFrames (ArtifactRecording interface). */
+  private findArtifactRecordingByDuckType(so: SceneObject, depth: number, maxDepth: number): ArtifactRecording | null {
+    if (depth > maxDepth) return null
+    const soAny = so as any
+    if (typeof soAny.getAllComponents === "function") {
+      const components = soAny.getAllComponents()
+      for (let c = 0; c < components.length; c++) {
+        const comp = components[c]
+        if (comp && typeof comp.setFrames === "function" && typeof comp.getFrames === "function") {
+          return comp as ArtifactRecording
+        }
+      }
+    }
+    for (let i = 0; i < so.getChildrenCount(); i++) {
+      const found = this.findArtifactRecordingByDuckType(so.getChild(i), depth + 1, maxDepth)
+      if (found) return found
+    }
+    return null
   }
 
   stop() {
@@ -196,6 +318,10 @@ export class BuildingPathState implements IPathMakerState {
     this.resetClickedRemover = undefined
     this.spawnClickedRemover?.()
     this.spawnClickedRemover = undefined
+    this.unsubscribeRecordVoiceEvents()
+    this.pendingArtifact = null
+    this.pendingRecordingFrames = null
+    this.ui.hideRecordVoice()
     if (this.updateEvent) {
       this.ownerScript.removeEvent(this.updateEvent)
       this.updateEvent = undefined

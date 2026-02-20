@@ -1,4 +1,5 @@
 import Event, {PublicApi} from "SpectaclesInteractionKit.lspkg/Utils/Event"
+import {MicrophoneRecorder} from "Microphone.lspkg/Scripts/MicrophoneRecorder"
 import {SurfaceDetection} from "../Surface Detection/Scripts/SurfaceDetection"
 import {PathData} from "./BuiltPathData"
 import {LineController} from "./LineController"
@@ -53,6 +54,10 @@ export class PathMaker extends BaseScriptComponent {
 
   @input
   spawnOffsetInFront: number = 80
+
+  @input
+  @allowUndefined
+  microphoneRecorder: MicrophoneRecorder
 
   private camTr: Transform = null
   private camOffsetTr: Transform = null
@@ -134,7 +139,8 @@ export class PathMaker extends BaseScriptComponent {
         this.finishLoop(startObject, startPosition, startRotation, splinePoints)
       },
       this.pfbSpawnObject,
-      this.spawnOffsetInFront
+      this.spawnOffsetInFront,
+      this.microphoneRecorder
     )
     this.currentState.start()
   }

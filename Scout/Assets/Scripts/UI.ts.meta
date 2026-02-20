@@ -34,6 +34,8 @@
     goToStartUiDistance: false
     homeUI: false
     pfbLoopUi: false
+    recordVoiceConfirmUI: false
+    recordVoicePackageUI: false
     tutorialAnimationPlayer: false
     tutorialText: false
     tutorialUI: false
@@ -59,6 +61,8 @@
       tutorialUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       tutorialAnimationPlayer: !<reference.AnimationPlayer> 00000000-0000-0000-0000-000000000000
       tutorialText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      recordVoicePackageUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      recordVoiceConfirmUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -75,3 +79,5 @@
     - // @input SceneObject tutorialUI
     - // @input Component.AnimationPlayer tutorialAnimationPlayer
     - // @input Component.Text tutorialText
+    - // @input SceneObject recordVoicePackageUI
+    - // @input SceneObject recordVoiceConfirmUI

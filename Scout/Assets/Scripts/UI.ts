@@ -40,6 +40,14 @@ export class UI extends BaseScriptComponent {
   @input
   tutorialText: Text
 
+  @input
+  @allowUndefined
+  recordVoicePackageUI: SceneObject
+
+  @input
+  @allowUndefined
+  recordVoiceConfirmUI: SceneObject
+
   get createPathClicked() {
     return this.createPathClickedEvent.publicApi()
   }
@@ -68,6 +76,22 @@ export class UI extends BaseScriptComponent {
     return this.spawnObjectClickedEvent.publicApi()
   }
 
+  get recordVoiceConfirmClicked() {
+    return this.recordVoiceConfirmClickedEvent.publicApi()
+  }
+
+  get recordVoiceRerecordClicked() {
+    return this.recordVoiceRerecordClickedEvent.publicApi()
+  }
+
+  get recordVoiceCancelClicked() {
+    return this.recordVoiceCancelClickedEvent.publicApi()
+  }
+
+  get recordVoiceDoneClicked() {
+    return this.recordVoiceDoneClickedEvent.publicApi()
+  }
+
   private createPathClickedEvent: Event = new Event()
   private resetPathClickedEvent: Event = new Event()
   private finishPathClickedEvent: Event = new Event()
@@ -75,6 +99,10 @@ export class UI extends BaseScriptComponent {
   private tutorialCompleteEvent: Event = new Event()
   private endSessionClickedEvent: Event = new Event()
   private spawnObjectClickedEvent: Event = new Event()
+  private recordVoiceConfirmClickedEvent: Event = new Event()
+  private recordVoiceRerecordClickedEvent: Event = new Event()
+  private recordVoiceCancelClickedEvent: Event = new Event()
+  private recordVoiceDoneClickedEvent: Event = new Event()
 
   private warningTr = null
   private tutorialTr = null
@@ -82,6 +110,8 @@ export class UI extends BaseScriptComponent {
   private duringPathCreationUiTr: Transform = null
   private goToStartUiTr: Transform = null
   private endSessionUiTr: Transform = null
+  private recordVoicePackageTr: Transform = null
+  private recordVoiceConfirmTr: Transform = null
   private currentActiveTr: Transform = null
 
   private tutorialStepCount: number = 0
@@ -95,12 +125,65 @@ export class UI extends BaseScriptComponent {
     this.duringPathCreationUiTr = this.duringPathCreationUI.getTransform()
     this.goToStartUiTr = this.goToStartUI.getTransform()
     this.endSessionUiTr = this.endSessionUI.getTransform()
+    if (this.recordVoicePackageUI) this.recordVoicePackageTr = this.recordVoicePackageUI.getTransform()
+    if (this.recordVoiceConfirmUI) this.recordVoiceConfirmTr = this.recordVoiceConfirmUI.getTransform()
 
     this.hide(this.tutorialTr)
     this.hide(this.homeTr)
     this.hide(this.duringPathCreationUiTr)
     this.hide(this.goToStartUiTr)
     this.hide(this.endSessionUiTr)
+    if (this.recordVoicePackageTr) this.hide(this.recordVoicePackageTr)
+    if (this.recordVoiceConfirmTr) this.hide(this.recordVoiceConfirmTr)
+  }
+
+  showRecordVoicePackageUI() {
+    if (!this.recordVoicePackageTr) return
+    if (this.recordVoiceConfirmTr) this.hide(this.recordVoiceConfirmTr)
+    this.show(this.recordVoicePackageTr)
+  }
+
+  showRecordVoiceConfirm() {
+    if (!this.recordVoiceConfirmTr) return
+    if (this.recordVoicePackageTr) this.hide(this.recordVoicePackageTr)
+    this.tryHideCurrentActive()
+    this.currentActiveTr = this.recordVoiceConfirmTr
+    this.show(this.currentActiveTr)
+  }
+
+  hideRecordVoicePackageUI() {
+    if (this.recordVoicePackageTr) this.hide(this.recordVoicePackageTr)
+  }
+
+  hideRecordVoice() {
+    if (this.recordVoicePackageTr) this.hide(this.recordVoicePackageTr)
+    if (this.recordVoiceConfirmTr) this.hide(this.recordVoiceConfirmTr)
+    if (this.currentActiveTr === this.recordVoiceConfirmTr) {
+      this.currentActiveTr = null
+    }
+  }
+
+  onRecordVoiceDoneButton() {
+    this.showRecordVoiceConfirm()
+    this.recordVoiceDoneClickedEvent.invoke()
+  }
+
+  onRecordVoiceConfirmButton() {
+    this.hideRecordVoice()
+    this.recordVoiceConfirmClickedEvent.invoke()
+    this.showDuringPathCreationUi()
+  }
+
+  onRecordVoiceRerecordButton() {
+    if (this.recordVoiceConfirmTr) this.hide(this.recordVoiceConfirmTr)
+    this.currentActiveTr = null
+    this.recordVoiceRerecordClickedEvent.invoke()
+    this.showRecordVoicePackageUI()
+  }
+
+  onRecordVoiceCancelButton() {
+    this.hideRecordVoice()
+    this.recordVoiceCancelClickedEvent.invoke()
   }
 
   showHomeUi() {
