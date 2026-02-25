@@ -34,7 +34,7 @@
   ShadowDensity: 1.000000
   Materials:
     - !<reference> c71dde88-df6c-46a6-8426-d07b956a747e
-  Mesh: !<reference> ae696250-2382-451d-9e80-372412e96fb6
+  Mesh: !<reference> e542623c-1432-4bfa-881d-a28905bd9e57
   Skin: !<reference> 00000000-0000-0000-0000-000000000000
   BlendShapesEnabled: true
   BlendNormals: false
@@ -224,7 +224,7 @@
     - f58356b3-5951-4df5-b04d-cf80824e31c6: 676c9cf6-f26d-445f-9b2f-56f4dab511c8
     - fce30be4-1421-45e4-847e-c61e6d93e866: 91ae4ff9-cc3f-4d42-8df0-10cf1fdfb3bd
   Name: Artifact
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: -91.192642, y: 5.379814, z: 40.000000}
@@ -362,9 +362,10 @@
     []
   Name: Physics Body
   Enabled: true
-  Shape: !<Box>
-    FitVisual: true
-    Size: {x: 15.000000, y: 15.000000, z: 15.000000}
+  Shape: !<Mesh>
+    Mesh: !<reference> e542623c-1432-4bfa-881d-a28905bd9e57
+    Convex: false
+    Skin: !<reference> 00000000-0000-0000-0000-000000000000
   Matter: !<reference> 00000000-0000-0000-0000-000000000000
   Filter: !<reference> 00000000-0000-0000-0000-000000000000
   OverlapFilter: !<reference> 00000000-0000-0000-0000-000000000000

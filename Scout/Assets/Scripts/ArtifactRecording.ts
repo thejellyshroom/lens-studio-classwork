@@ -54,18 +54,38 @@ export class ArtifactRecording extends BaseScriptComponent {
     this.debug("trySubscribeToPlayTrigger: recorder=" + !!this.microphoneRecorder + " playSubscribed=" + this.playSubscribed)
     if (!this.microphoneRecorder || this.playSubscribed) return
     const so = this.sceneObject as any
-    const interactable = this.getInteractable(so)
-    if (!interactable) {
+    const interactables = this.getAllInteractables(so)
+    if (interactables.length === 0) {
       this.debug("trySubscribeToPlayTrigger: no Interactable found on this object or hierarchy")
       return
     }
-    if (typeof (interactable as any).onTriggerStart === "undefined") {
-      this.debug("trySubscribeToPlayTrigger: Interactable has no onTriggerStart")
-      return
-    }
     this.playSubscribed = true
-    ;(interactable as any).onTriggerStart.add(() => this.playRecording())
-    this.debug("trySubscribeToPlayTrigger: subscribed to Interactable.onTriggerStart")
+    for (let i = 0; i < interactables.length; i++) {
+      const interactable = interactables[i]
+      if (typeof (interactable as any).onTriggerStart !== "undefined") {
+        ;(interactable as any).onTriggerStart.add(() => this.playRecording())
+        this.debug("trySubscribeToPlayTrigger: subscribed to Interactable.onTriggerStart (total " + interactables.length + ")")
+      }
+    }
+  }
+
+  /** Collect components with onTriggerStart on this object and descendants only (no parent — avoid scene-wide subscriptions). */
+  private getAllInteractables(so: any, depth: number = 0, maxDepth: number = 10, out: any[] = []): any[] {
+    if (depth > maxDepth) return out
+    if (typeof so.getAllComponents === "function") {
+      const components = so.getAllComponents()
+      for (let i = 0; i < components.length; i++) {
+        const c = components[i]
+        if (c && typeof (c as any).onTriggerStart !== "undefined") {
+          out.push(c)
+        }
+      }
+    }
+    const count = so.getChildrenCount ? so.getChildrenCount() : 0
+    for (let i = 0; i < count; i++) {
+      this.getAllInteractables(so.getChild(i), depth + 1, maxDepth, out)
+    }
+    return out
   }
 
   /** SpectaclesInteractionKit Interactable (same object or hierarchy). Tries type name first, then duck-type (onTriggerStart). */

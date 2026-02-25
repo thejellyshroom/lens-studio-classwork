@@ -189,11 +189,12 @@ export class MicrophoneRecorder extends BaseScriptComponent {
     this.playbackDurationOverride = totalSamples / SAMPLE_RATE
     this.currentPlaybackTime = 0
     this.audioComponent.stop(false)
-    this.playbackAudioUpdateEvent.enabled = true
-    this.audioComponent.play(-1)
+    // Enqueue all frames before starting playback so the buffer is ready
     for (let i = 0; i < frames.length; i++) {
       this.audioOutputProvider.enqueueAudioFrame(frames[i].audioFrame, frames[i].audioFrameShape)
     }
+    this.playbackAudioUpdateEvent.enabled = true
+    this.audioComponent.play(-1)
     return true
   }
 
