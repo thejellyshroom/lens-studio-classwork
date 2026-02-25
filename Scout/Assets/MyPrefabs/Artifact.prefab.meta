@@ -157,7 +157,7 @@
   ShadowDensity: 1.000000
   Materials:
     - !<reference> c71dde88-df6c-46a6-8426-d07b956a747e
-  Mesh: !<reference> e542623c-1432-4bfa-881d-a28905bd9e57
+  Mesh: !<reference> ae696250-2382-451d-9e80-372412e96fb6
   Skin: !<reference> 00000000-0000-0000-0000-000000000000
   BlendShapesEnabled: true
   BlendNormals: false
@@ -263,7 +263,7 @@
   PrefabRemaps:
     []
   Name: UI
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 15.000000, z: 0.000000}
@@ -293,7 +293,7 @@
   PrefabRemaps:
     []
   Name: Artifact
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: -91.192642, y: 5.379814, z: 40.000000}

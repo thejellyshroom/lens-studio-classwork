@@ -26,9 +26,11 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    achievementTracker: false
     camObj: false
     camObjOffset: false
     finalPathDistText: false
+    inventory: false
     microphoneRecorder: false
     pathDistText: false
     pathRmv: false
@@ -36,8 +38,10 @@
     pfbLine: false
     pfbSpawnObject: false
     pfbSurfaceDetection: false
+    pfbTouchGrassCollectible: false
     placingStartFinishLinesForwardDisplace: false
     playerPaceCalculator: false
+    soundController: false
     spawnOffsetInFront: false
     ui: false
   ScriptTypesHidden:
@@ -63,6 +67,10 @@
       pfbSpawnObject: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
       spawnOffsetInFront: !<float> 80.000000
       microphoneRecorder: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
+      achievementTracker: !<MappingBased.AssignableType_4> 00000000-0000-0000-0000-000000000000
+      inventory: !<MappingBased.AssignableType_5> 00000000-0000-0000-0000-000000000000
+      pfbTouchGrassCollectible: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      soundController: !<MappingBased.AssignableType_6> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -81,3 +89,7 @@
     - // @input Asset.ObjectPrefab pfbSpawnObject
     - // @input float spawnOffsetInFront = 80
     - // @input AssignableType_3 microphoneRecorder
+    - // @input AssignableType_4 achievementTracker
+    - // @input AssignableType_5 inventory
+    - // @input Asset.ObjectPrefab pfbTouchGrassCollectible
+    - // @input AssignableType_6 soundController

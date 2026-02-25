@@ -48,6 +48,18 @@ export class UI extends BaseScriptComponent {
   @allowUndefined
   recordVoiceConfirmUI: SceneObject
 
+  @input
+  @allowUndefined
+  collectibleNearbyUI: SceneObject
+
+  @input
+  @allowUndefined
+  collectibleNearbyText: Text
+
+  @input
+  @allowUndefined
+  noCollectedArtifactsUI: SceneObject
+
   get createPathClicked() {
     return this.createPathClickedEvent.publicApi()
   }
@@ -92,6 +104,10 @@ export class UI extends BaseScriptComponent {
     return this.recordVoiceDoneClickedEvent.publicApi()
   }
 
+  get placeFromInventoryClicked() {
+    return this.placeFromInventoryClickedEvent.publicApi()
+  }
+
   private createPathClickedEvent: Event = new Event()
   private resetPathClickedEvent: Event = new Event()
   private finishPathClickedEvent: Event = new Event()
@@ -103,6 +119,7 @@ export class UI extends BaseScriptComponent {
   private recordVoiceRerecordClickedEvent: Event = new Event()
   private recordVoiceCancelClickedEvent: Event = new Event()
   private recordVoiceDoneClickedEvent: Event = new Event()
+  private placeFromInventoryClickedEvent: Event = new Event()
 
   private warningTr = null
   private tutorialTr = null
@@ -112,6 +129,8 @@ export class UI extends BaseScriptComponent {
   private endSessionUiTr: Transform = null
   private recordVoicePackageTr: Transform = null
   private recordVoiceConfirmTr: Transform = null
+  private collectibleNearbyTr: Transform | null = null
+  private noCollectedArtifactsTr: Transform | null = null
   private currentActiveTr: Transform = null
 
   private tutorialStepCount: number = 0
@@ -127,6 +146,10 @@ export class UI extends BaseScriptComponent {
     this.endSessionUiTr = this.endSessionUI.getTransform()
     if (this.recordVoicePackageUI) this.recordVoicePackageTr = this.recordVoicePackageUI.getTransform()
     if (this.recordVoiceConfirmUI) this.recordVoiceConfirmTr = this.recordVoiceConfirmUI.getTransform()
+    if (this.collectibleNearbyUI) this.collectibleNearbyTr = this.collectibleNearbyUI.getTransform()
+    if (this.collectibleNearbyTr) this.hide(this.collectibleNearbyTr)
+    if (this.noCollectedArtifactsUI) this.noCollectedArtifactsTr = this.noCollectedArtifactsUI.getTransform()
+    if (this.noCollectedArtifactsTr) this.hide(this.noCollectedArtifactsTr)
 
     this.hide(this.tutorialTr)
     this.hide(this.homeTr)
@@ -278,6 +301,60 @@ export class UI extends BaseScriptComponent {
 
   onSpawnObjectButton() {
     this.spawnObjectClickedEvent.invoke()
+  }
+
+  onPlaceFromInventoryButton() {
+    this.placeFromInventoryClickedEvent.invoke()
+  }
+
+  showCollectibleNearby(distanceCm: number, _worldPosition: vec3) {
+    if (!this.collectibleNearbyTr) return
+    const meters = (distanceCm / 100).toFixed(1)
+    if (this.collectibleNearbyText) this.collectibleNearbyText.text = "Artifact nearby — " + meters + " m"
+    const localPos = this.collectibleNearbyTr.getLocalPosition()
+    localPos.x = 0
+    localPos.y = -5
+    localPos.z = 0
+    this.collectibleNearbyTr.setLocalPosition(localPos)
+  }
+
+  hideCollectibleNearby() {
+    if (!this.collectibleNearbyTr) return
+    const localPos = this.collectibleNearbyTr.getLocalPosition()
+    localPos.y = 10000
+    this.collectibleNearbyTr.setLocalPosition(localPos)
+  }
+
+  showNoCollectedArtifacts() {
+    if (!this.noCollectedArtifactsTr) return
+    // Overlay only: do not hide path-creation UI or change currentActiveTr
+    this.showOverlay(this.noCollectedArtifactsTr)
+    const evt = this.createEvent("DelayedCallbackEvent")
+    evt.bind(() => this.hideNoCollectedArtifacts())
+    evt.reset(1)
+  }
+
+  hideNoCollectedArtifacts() {
+    if (!this.noCollectedArtifactsTr) return
+    this.hideOverlay(this.noCollectedArtifactsTr)
+    // Path-creation UI was never hidden, so do not call showDuringPathCreationUi()
+  }
+
+  /** Shows a transform on screen without hiding current UI or enabling backplate (for overlays). */
+  private showOverlay(tr: Transform) {
+    const localPos = tr.getLocalPosition()
+    localPos.x = 0
+    localPos.y = -5
+    localPos.z = 0
+    tr.setLocalPosition(localPos)
+    this.centerScreenTransform(tr.getSceneObject())
+  }
+
+  /** Hides overlay by moving off-screen without changing backplate (current UI stays as-is). */
+  private hideOverlay(tr: Transform) {
+    const localPos = tr.getLocalPosition()
+    localPos.y = 10000
+    tr.setLocalPosition(localPos)
   }
 
   onStopWalkingButton() {

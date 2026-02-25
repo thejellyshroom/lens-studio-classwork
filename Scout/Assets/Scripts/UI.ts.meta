@@ -28,11 +28,14 @@
   ScriptInputsHidden:
     backplateSo: false
     camObj: false
+    collectibleNearbyText: false
+    collectibleNearbyUI: false
     duringPathCreationUI: false
     endSessionUI: false
     goToStartUI: false
     goToStartUiDistance: false
     homeUI: false
+    noCollectedArtifactsUI: false
     pfbLoopUi: false
     recordVoiceConfirmUI: false
     recordVoicePackageUI: false
@@ -63,6 +66,9 @@
       tutorialText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       recordVoicePackageUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       recordVoiceConfirmUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      collectibleNearbyUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      collectibleNearbyText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      noCollectedArtifactsUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -81,3 +87,6 @@
     - // @input Component.Text tutorialText
     - // @input SceneObject recordVoicePackageUI
     - // @input SceneObject recordVoiceConfirmUI
+    - // @input SceneObject collectibleNearbyUI
+    - // @input Component.Text collectibleNearbyText
+    - // @input SceneObject noCollectedArtifactsUI

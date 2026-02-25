@@ -1,7 +1,9 @@
 import Event, {PublicApi} from "SpectaclesInteractionKit.lspkg/Utils/Event"
 import {MicrophoneRecorder} from "Microphone.lspkg/Scripts/MicrophoneRecorder"
 import {SurfaceDetection} from "../Surface Detection/Scripts/SurfaceDetection"
+import {AchievementTracker} from "./AchievementTracker"
 import {PathData} from "./BuiltPathData"
+import {Inventory} from "./Inventory"
 import {LineController} from "./LineController"
 import {BuildingPathState} from "./PathMakerStates/BuildingPathState"
 import {IdleState} from "./PathMakerStates/IdleState"
@@ -10,6 +12,7 @@ import {PlacingFinishState} from "./PathMakerStates/PlacingFinishState"
 import {PlacingStartState} from "./PathMakerStates/PlacingStartState"
 import {PathmakingPlayerFeedback} from "./PathmakingPlayerFeedback"
 import {PlayerPaceCalculator} from "./PlayerPaceCalculator"
+import {SoundController} from "./SoundController"
 import {UI} from "./UI"
 
 @component
@@ -58,6 +61,22 @@ export class PathMaker extends BaseScriptComponent {
   @input
   @allowUndefined
   microphoneRecorder: MicrophoneRecorder
+
+  @input
+  @allowUndefined
+  achievementTracker: AchievementTracker
+
+  @input
+  @allowUndefined
+  inventory: Inventory
+
+  @input
+  @allowUndefined
+  pfbTouchGrassCollectible: ObjectPrefab
+
+  @input
+  @allowUndefined
+  soundController: SoundController
 
   private camTr: Transform = null
   private camOffsetTr: Transform = null
@@ -140,7 +159,11 @@ export class PathMaker extends BaseScriptComponent {
       },
       this.pfbSpawnObject,
       this.spawnOffsetInFront,
-      this.microphoneRecorder
+      this.microphoneRecorder,
+      this.achievementTracker,
+      this.inventory,
+      this.pfbTouchGrassCollectible,
+      this.soundController
     )
     this.currentState.start()
   }

@@ -14,7 +14,15 @@ import {PaintOnFloorBehavior} from "../PathPrevewBehaviors/PaintOnFloorBehavior"
 import {PlayerPaceCalculator} from "../PlayerPaceCalculator"
 import {UI} from "../UI"
 import {ArtifactRecording} from "../ArtifactRecording"
+import {AchievementTracker} from "../AchievementTracker"
+import {Inventory} from "../Inventory"
 import {IPathMakerState} from "./IPathMakerState"
+
+export interface ActiveCollectible {
+  achievementId: string
+  sceneObject: SceneObject
+  position: vec3
+}
 
 export class BuildingPathState implements IPathMakerState {
   constructor(
@@ -47,10 +55,19 @@ export class BuildingPathState implements IPathMakerState {
     ) => void,
     protected pfbSpawnObject: ObjectPrefab | undefined,
     protected spawnOffsetInFront: number,
-    protected microphoneRecorder: any
+    protected microphoneRecorder: any,
+    protected achievementTracker: AchievementTracker | undefined,
+    protected inventory: Inventory | undefined,
+    protected pfbTouchGrassCollectible: ObjectPrefab | undefined,
+    protected soundController: any
   ) {
     this.startTransform = this.startObject.getTransform()
   }
+
+  protected static readonly collectibleCollectRadiusCm = 150
+  protected static readonly collectibleNearbyRadiusCm = 500
+  protected static readonly collectibleSpawnAheadCm = 280
+  protected static readonly TOUCH_GRASS_ID = "touch_grass"
 
   protected previewZOffset = 300
   protected static distanceToMakeLoopXZ = 200
@@ -72,6 +89,10 @@ export class BuildingPathState implements IPathMakerState {
   protected pendingArtifact: {spawnPos: vec3; spawnRot: quat} | null = null
   /** Recording captured when user taps Done; used when they tap Confirm so each artifact gets the right copy. */
   protected pendingRecordingFrames: any[] | null = null
+  protected activeCollectibles: ActiveCollectible[] = []
+  protected touchGrassSpawnedThisPath = false
+  protected placeFromInventoryRemover: (() => void) | undefined
+  protected pendingPlaceFromInventoryAchievementId: string | null = null
 
   // To clear on start()
   protected prevCameraPositionForVisual: vec3 | undefined
@@ -158,6 +179,18 @@ export class BuildingPathState implements IPathMakerState {
 
     if (this.pfbSpawnObject) {
       this.spawnClickedRemover = this.ui.spawnObjectClicked.add(() => {
+        // Single "Place artifact" button: if user has inventory, place-from-inventory flow (voice then place, no consumption); else show message or normal place
+        if (this.inventory && this.inventory.hasAny()) {
+          const entries = this.inventory.getEntries()
+          if (entries.length > 0) {
+            this.onPlaceFromInventoryRequested(entries[0].achievementId)
+            return
+          }
+        }
+        if (this.inventory && typeof this.ui.showNoCollectedArtifacts === "function") {
+          this.ui.showNoCollectedArtifacts()
+          return
+        }
         this.onSpawnObjectRequested()
       })
     }
@@ -166,6 +199,18 @@ export class BuildingPathState implements IPathMakerState {
       this.startPosition.add(this.startTransform.forward.uniformScale(50)),
       this.startPosition
     ])
+    if (this.achievementTracker) {
+      this.achievementTracker.pathStarted()
+    }
+    this.touchGrassSpawnedThisPath = false
+    // Optional: separate "Place from inventory" button can still fire placeFromInventoryClicked;
+    // the main "Place artifact" button (spawnObjectClicked) already handles both flows when inventory.hasAny()
+    if (this.ui.placeFromInventoryClicked && this.inventory) {
+      this.placeFromInventoryRemover = this.ui.placeFromInventoryClicked.add(() => {
+        const entries = this.inventory.getEntries()
+        if (entries.length > 0) this.onPlaceFromInventoryRequested(entries[0].achievementId)
+      })
+    }
     this.updateEvent = this.ownerScript.createEvent("UpdateEvent")
     this.updateEvent.bind(() => {
       this.onUpdate()
@@ -229,12 +274,24 @@ export class BuildingPathState implements IPathMakerState {
 
   private onRecordVoiceConfirm() {
     try {
-      if (!this.pendingArtifact || !this.pfbSpawnObject) return
+      if (!this.pendingArtifact) return
       const frames = this.pendingRecordingFrames != null ? this.pendingRecordingFrames : (this.microphoneRecorder != null ? this.microphoneRecorder.getRecordedFramesCopy() : [])
       this.pendingRecordingFrames = null
+      const prefabOverride =
+        this.pendingPlaceFromInventoryAchievementId === BuildingPathState.TOUCH_GRASS_ID
+          ? this.pfbTouchGrassCollectible
+          : undefined
+      const pfb = prefabOverride != null ? prefabOverride : this.pfbSpawnObject
+      if (!pfb) {
+        this.pendingArtifact = null
+        this.pendingPlaceFromInventoryAchievementId = null
+        return
+      }
+      // Place-from-inventory: we do NOT call inventory.takeOne — nothing is consumed
       print("[BuildingPathState] Confirm: placing artifact with " + (frames ? frames.length : 0) + " frames")
-      this.placeArtifactAt(this.pendingArtifact.spawnPos, this.pendingArtifact.spawnRot, frames)
+      this.placeArtifactAt(this.pendingArtifact.spawnPos, this.pendingArtifact.spawnRot, frames, prefabOverride)
       this.pendingArtifact = null
+      this.pendingPlaceFromInventoryAchievementId = null
     } finally {
       this.unsubscribeRecordVoiceEvents()
       this.ui.hideRecordVoice()
@@ -244,15 +301,17 @@ export class BuildingPathState implements IPathMakerState {
 
   private onRecordVoiceCancel() {
     this.pendingArtifact = null
+    this.pendingPlaceFromInventoryAchievementId = null
     this.pendingRecordingFrames = null
     this.unsubscribeRecordVoiceEvents()
     this.ui.hideRecordVoice()
     this.ui.showDuringPathCreationUi()
   }
 
-  private placeArtifactAt(spawnPos: vec3, spawnRot: quat, recordingFrames: any[] | null) {
-    if (!this.pfbSpawnObject) return
-    const so = this.pfbSpawnObject.instantiate(null)
+  private placeArtifactAt(spawnPos: vec3, spawnRot: quat, recordingFrames: any[] | null, prefabOverride?: ObjectPrefab) {
+    const pfb = prefabOverride != null ? prefabOverride : this.pfbSpawnObject
+    if (!pfb) return
+    const so = pfb.instantiate(null)
     so.getTransform().setWorldPosition(spawnPos)
     so.getTransform().setWorldRotation(spawnRot)
     if (recordingFrames && recordingFrames.length > 0) {
@@ -266,6 +325,103 @@ export class BuildingPathState implements IPathMakerState {
       }
     }
     this.spawnedObjects.push(so)
+  }
+
+  private getCollectibleSpawnPosition(): vec3 {
+    const camPos = this.cameraTransform.getWorldPosition()
+    const groundY = LensInitializer.getInstance().getPlayerGroundPos().y
+    const flatAhead = LinearAlgebra.flatNor(this.cameraTransform.back)
+    const totalForward = this.spawnOffsetInFront + BuildingPathState.spawnExtraForwardCm
+    return new vec3(camPos.x, groundY, camPos.z).add(flatAhead.uniformScale(totalForward))
+  }
+
+  private getCollectibleSpawnRotation(): quat {
+    const flatAhead = LinearAlgebra.flatNor(this.cameraTransform.back)
+    return quat.lookAt(flatAhead, vec3.up())
+  }
+
+  private trySpawnTouchGrassCollectible() {
+    if (
+      !this.achievementTracker ||
+      !this.achievementTracker.isUnlocked(BuildingPathState.TOUCH_GRASS_ID) ||
+      this.touchGrassSpawnedThisPath ||
+      !this.pfbTouchGrassCollectible
+    ) {
+      return
+    }
+    this.touchGrassSpawnedThisPath = true
+    const spawnPos = this.getCollectibleSpawnPosition()
+    const spawnRot = this.getCollectibleSpawnRotation()
+    const so = this.pfbTouchGrassCollectible.instantiate(null)
+    so.getTransform().setWorldPosition(spawnPos)
+    so.getTransform().setWorldRotation(spawnRot)
+    this.activeCollectibles.push({
+      achievementId: BuildingPathState.TOUCH_GRASS_ID,
+      sceneObject: so,
+      position: spawnPos
+    })
+    if (this.soundController && typeof this.soundController.playSound === "function") {
+      this.soundController.playSound("collectible_appeared")
+    }
+  }
+
+  private updateCollectiblesProximity(playerPos: vec3) {
+    const toRemove: number[] = []
+    for (let i = 0; i < this.activeCollectibles.length; i++) {
+      const ac = this.activeCollectibles[i]
+      const dist = playerPos.distance(ac.position)
+      if (dist < BuildingPathState.collectibleCollectRadiusCm) {
+        ac.sceneObject.destroy()
+        if (this.inventory) this.inventory.addCollected(ac.achievementId)
+        if (this.soundController && typeof this.soundController.playSound === "function") {
+          this.soundController.playSound("collectible_collected")
+        }
+        toRemove.push(i)
+      }
+    }
+    for (let j = toRemove.length - 1; j >= 0; j--) {
+      this.activeCollectibles.splice(toRemove[j], 1)
+    }
+  }
+
+  private updateCollectibleNearbyIndicator(playerPos: vec3) {
+    if (!this.ui.showCollectibleNearby || !this.ui.hideCollectibleNearby) return
+    let nearest: { distanceCm: number; position: vec3 } | null = null
+    for (let i = 0; i < this.activeCollectibles.length; i++) {
+      const ac = this.activeCollectibles[i]
+      const dist = playerPos.distance(ac.position)
+      if (dist <= BuildingPathState.collectibleNearbyRadiusCm && dist > BuildingPathState.collectibleCollectRadiusCm) {
+        if (!nearest || dist < nearest.distanceCm) {
+          nearest = { distanceCm: dist, position: ac.position }
+        }
+      }
+    }
+    if (nearest) {
+      this.ui.showCollectibleNearby(nearest.distanceCm, nearest.position)
+    } else {
+      this.ui.hideCollectibleNearby()
+    }
+  }
+
+  private onPlaceFromInventoryRequested(achievementId: string) {
+    if (!this.inventory || !this.pfbTouchGrassCollectible) return
+    const entries = this.inventory.getEntries()
+    const hasEntry = entries.some((e) => e.achievementId === achievementId && e.count > 0)
+    if (!hasEntry) return
+    this.pendingPlaceFromInventoryAchievementId = achievementId
+    const spawnPos = this.getCollectibleSpawnPosition()
+    const spawnRot = this.getCollectibleSpawnRotation()
+    this.pendingArtifact = { spawnPos, spawnRot }
+    this.ui.hideRecordVoice?.()
+    if (this.microphoneRecorder && this.ui.recordVoicePackageUI) {
+      this.ui.showRecordVoicePackageUI()
+      this.subscribeRecordVoiceEvents()
+    } else {
+      // No record-voice UI: place immediately; do not consume from inventory
+      this.placeArtifactAt(spawnPos, spawnRot, null, this.pfbTouchGrassCollectible)
+      this.pendingArtifact = null
+      this.pendingPlaceFromInventoryAchievementId = null
+    }
   }
 
   /** Finds ArtifactRecording on the prefab instance, root or any child (must exist on prefab; we do not createComponent). */
@@ -310,6 +466,15 @@ export class BuildingPathState implements IPathMakerState {
   }
 
   stop() {
+    if (this.achievementTracker) {
+      this.achievementTracker.pathEnded()
+    }
+    this.activeCollectibles.forEach((ac) => ac.sceneObject.destroy())
+    this.activeCollectibles = []
+    this.placeFromInventoryRemover?.()
+    this.placeFromInventoryRemover = undefined
+    this.pendingPlaceFromInventoryAchievementId = null
+    this.ui.hideCollectibleNearby?.()
     this.finishClickedRemover?.()
     this.finishClickedRemover = undefined
     this.loopClickedRemover?.()
@@ -343,6 +508,10 @@ export class BuildingPathState implements IPathMakerState {
 
     // During-path-creation UI is shown for the whole building phase (from start()); loop UI still toggles by proximity
     const nPos = LensInitializer.getInstance().getPlayerGroundPos()
+
+    this.trySpawnTouchGrassCollectible()
+    this.updateCollectiblesProximity(nPos)
+    this.updateCollectibleNearbyIndicator(nPos)
 
     // Make the high density visual ahead of us
     const smallMoved = nPos.sub(this.prevCameraPositionForVisual)

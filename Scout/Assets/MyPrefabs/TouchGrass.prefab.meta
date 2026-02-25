@@ -1,0 +1,71 @@
+- !<AssetImportMetadata/0892f294-101c-4678-9ffb-7f188f4aedff>
+  ImportedAssetIds:
+    ObjectPrefab: !<reference> f40e917f-f4cc-457f-a222-441dff52ddd6
+  ImporterName: ObjectPrefabImporter
+  PrimaryAsset: !<reference> f40e917f-f4cc-457f-a222-441dff52ddd6
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    ObjectPrefab: !<own> 34e9e95a-ec2a-45bb-9611-6abba17bec14
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ObjectPrefabAssetData/34e9e95a-ec2a-45bb-9611-6abba17bec14>
+  Prototype: !<ObjectOwner/b3531691-8209-4e92-8d87-5367e9bd83d7>
+    PackagePath: ""
+    objects:
+      - !<own> 89f310b5-f55b-4340-5fe0-a7ab3d6712f4
+- !<SceneObject/53b85d53-5e29-4bad-51d2-16fe0383e75e>
+  PrefabRemaps:
+    []
+  Name: Pyramid
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 10.000000, y: 10.000000, z: 10.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> f9f41df0-beb1-4fb0-621b-e2b2f5da9fa0
+- !<SceneObject/89f310b5-f55b-4340-5fe0-a7ab3d6712f4>
+  PrefabRemaps:
+    []
+  Name: TouchGrass
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: -48.607735}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 10.000000, y: 10.000000, z: 10.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 53b85d53-5e29-4bad-51d2-16fe0383e75e
+  Components:
+    []
+- !<RenderMeshVisual/f9f41df0-beb1-4fb0-621b-e2b2f5da9fa0>
+  PrefabRemaps:
+    []
+  Name: Render Mesh Visual
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> a8d3a1bd-ce85-43f1-84ba-dd2f1d058642
+  Mesh: !<reference> ae696250-2382-451d-9e80-372412e96fb6
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
