@@ -1,0 +1,128 @@
+- !<AssetImportMetadata/9622e3d7-63a7-4ac0-8bb2-cd9b9879ead0>
+  ImportedAssetIds:
+    .hidden/deer: !<reference> 178ee409-3257-424d-9a6f-9a6b74ca505a
+    4a3e924fad0e2f27: !<reference> 6faea6e4-6ec8-4e66-b422-9058735a8283
+    66780cf3a4dcb2b8: !<reference> cbde7b38-ec1a-4b5b-9850-8ac59364c902
+    96f664b015fcd573: !<reference> d1a0d081-896c-4199-899a-e715aff6be91
+    Materials/deer: !<reference> 9f042eb0-89ec-4abd-ac76-7634621df822
+    Materials/deer|deer|GraphPassInfo: !<reference> 65be1fc5-df64-4871-9b26-d1980fdf9392
+    Meshes/Circle: !<reference> b5c91ee7-94b7-45b5-aadd-a7cf0d11e4a3
+    Scene: !<reference> faf6616e-0d55-4cb4-89d2-1d2d787984c0
+    c0330b887aa7c4e4: !<reference> fd42f086-6a1d-441d-ad82-08efa840fa5f
+    c6aab86a068978e6: !<reference> e043f119-bc47-406b-8881-5fa6f2e42960
+  ImporterName: GltfImporter
+  PrimaryAsset: !<reference> faf6616e-0d55-4cb4-89d2-1d2d787984c0
+  PackageType: LegacyPackage
+  LegacyPackagePolicy: CanBeUnpackedTransparent
+  ExtraData:
+    {}
+  AssetDataMap:
+    Scene: !<own> 6182965e-bb9c-40e3-b89e-9a079dcfdb20
+  DependentFiles:
+    []
+  ImporterSettings: !<GltfImporterSettings>
+    UseLegacyImporter: false
+    WithMaterials: true
+    NamingConvention: ByCategorySanitizeV2
+    PersistentIdGenerationAlgorithm: DescriptorBased
+    AnimationCurveOptimization: true
+    CustomAnimationSamplingRate: 30.000000
+    ImportVertexColor: true
+    ImportTangents: true
+    ImportMorphTargetAnimation: true
+    ConvertMetersToCentimeters: true
+    RegenerateTangents: false
+  CompressionSettings: !<ComplexCompressionSettings>
+    Presets:
+      None Compression: !<SingleCompressionSettings>
+        CompressorName: None
+        CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+    ExtensionMappings:
+      mesh: None Compression
+    Overrides:
+      {}
+- !<ObjectPrefabAssetData/6182965e-bb9c-40e3-b89e-9a079dcfdb20>
+  Prototype: !<ObjectOwner/13e32e7d-ed96-4d1e-bca4-72b313df9f6c>
+    PackagePath: ""
+    objects:
+      - !<own> cbde7b38-ec1a-4b5b-67af-753a6c9b36fd
+- !<SceneObject/6faea6e4-6ec8-4e66-4bdd-6fa78ca57d7c>
+  PrefabRemaps:
+    []
+  Name: Scenes
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> d1a0d081-896c-4199-7665-18ea5009416e
+  Components:
+    []
+- !<SceneObject/cbde7b38-ec1a-4b5b-67af-753a6c9b36fd>
+  PrefabRemaps:
+    []
+  Name: deer
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 100.000000, y: 100.000000, z: 100.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 6faea6e4-6ec8-4e66-4bdd-6fa78ca57d7c
+  Components:
+    []
+- !<SceneObject/d1a0d081-896c-4199-7665-18ea5009416e>
+  PrefabRemaps:
+    []
+  Name: Scene
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> fd42f086-6a1d-441d-527d-f71057bf05a0
+  Components:
+    []
+- !<RenderMeshVisual/e043f119-bc47-406b-777e-a0590d1bd69f>
+  PrefabRemaps:
+    []
+  Name: Circle
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 9f042eb0-89ec-4abd-ac76-7634621df822
+  Mesh: !<reference> b5c91ee7-94b7-45b5-aadd-a7cf0d11e4a3
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
+- !<SceneObject/fd42f086-6a1d-441d-527d-f71057bf05a0>
+  PrefabRemaps:
+    []
+  Name: deer
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> e043f119-bc47-406b-777e-a0590d1bd69f

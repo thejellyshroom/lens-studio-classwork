@@ -1,0 +1,190 @@
+- !<AssetImportMetadata/68841b0d-191c-4f42-9aab-a276ef7d2d41>
+  ImportedAssetIds:
+    ObjectPrefab: !<reference> 0c216be6-f3fe-402f-a6d1-8b8959943e69
+  ImporterName: ObjectPrefabImporter
+  PrimaryAsset: !<reference> 0c216be6-f3fe-402f-a6d1-8b8959943e69
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    ObjectPrefab: !<own> c9348d1b-2fb6-4913-b3c9-66e6079e87af
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<SceneObject/24be0c92-7ffa-43c5-4b49-7f986475cea5>
+  PrefabRemaps:
+    []
+  Name: Scene
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.600000, y: 0.600000, z: 0.600000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 5fa1f37a-2482-4693-7d64-90fa2da83136
+  Components:
+    []
+- !<ScriptComponent/3bb2be9d-1207-4a13-95b4-23ec7cd5e0f2>
+  PrefabRemaps:
+    []
+  Name: InteractableOutlineFeedback
+  Enabled: true
+  ScriptAsset: !<reference> c3a4c979-744e-48e5-afd5-88ca7edb09fa
+  ScriptInputsDefault:
+    hoveringColor: true
+    activatingColor: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      targetOutlineMaterial: !<reference.Material> fefa0256-03d4-444c-b107-8880ccd2ad8f
+      hoveringColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 0.040000, w: 1.000000}
+      activatingColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      outlineWeight: 0.025000
+      meshVisuals: !<reference.RenderMeshVisual[]>
+        - !<reference> 4cbb40b0-7e76-4c55-78d5-d97ad44e7b0a
+  ScriptTypes:
+    "":
+      {}
+- !<RenderMeshVisual/4cbb40b0-7e76-4c55-78d5-d97ad44e7b0a>
+  PrefabRemaps:
+    []
+  Name: Circle
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 9f042eb0-89ec-4abd-ac76-7634621df822
+  Mesh: !<reference> b5c91ee7-94b7-45b5-aadd-a7cf0d11e4a3
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
+- !<SceneObject/5fa1f37a-2482-4693-7d64-90fa2da83136>
+  PrefabRemaps:
+    []
+  Name: deer
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.500000, y: 0.500000, z: 0.500000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 4cbb40b0-7e76-4c55-78d5-d97ad44e7b0a
+    - !<own> 89e83a65-3601-4391-930e-0ce628c7580d
+    - !<own> d6ed17ff-27db-4f1a-a4aa-38879fc85913
+    - !<own> 3bb2be9d-1207-4a13-95b4-23ec7cd5e0f2
+    - !<own> 63690c59-abd4-4f38-b1b5-9aff816e3384
+- !<ScriptComponent/63690c59-abd4-4f38-b1b5-9aff816e3384>
+  PrefabRemaps:
+    []
+  Name: ArtifactRecording
+  Enabled: true
+  ScriptAsset: !<reference> eee75094-9d91-4410-a0b8-4428e8cd9985
+  ScriptInputsDefault:
+    {}
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      {}
+  ScriptTypes:
+    "":
+      {}
+- !<ScriptComponent/89e83a65-3601-4391-930e-0ce628c7580d>
+  PrefabRemaps:
+    []
+  Name: Interactable
+  Enabled: true
+  ScriptAsset: !<reference> abaf91d9-5990-4f4f-a502-e6a41b964934
+  ScriptInputsDefault:
+    targetingMode: true
+    targetingVisual: true
+    ignoreInteractionPlane: true
+    keepHoverOnTrigger: true
+    enableInstantDrag: true
+    isScrollable: true
+    allowMultipleInteractors: true
+    enablePokeDirectionality: true
+    acceptableXDirections: true
+    acceptableYDirections: true
+    acceptableZDirections: true
+    useFilteredPinch: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      targetingMode: !<float> 3.000000
+      targetingVisual: !<float> 1.000000
+      ignoreInteractionPlane: false
+      keepHoverOnTrigger: false
+      enableInstantDrag: false
+      isScrollable: false
+      allowMultipleInteractors: true
+      enablePokeDirectionality: false
+      acceptableXDirections: !<float> 0.000000
+      acceptableYDirections: !<float> 0.000000
+      acceptableZDirections: !<float> 1.000000
+      useFilteredPinch: false
+  ScriptTypes:
+    "":
+      {}
+- !<ObjectPrefabAssetData/c9348d1b-2fb6-4913-b3c9-66e6079e87af>
+  Prototype: !<ObjectOwner/d7b44df8-a344-4019-bda6-0baafe47650f>
+    PackagePath: ""
+    objects:
+      - !<own> ee0f87ce-57f6-4202-55d0-6536e60ccea2
+- !<BodyComponent/d6ed17ff-27db-4f1a-a4aa-38879fc85913>
+  PrefabRemaps:
+    []
+  Name: Physics Body
+  Enabled: true
+  Shape: !<Mesh>
+    Mesh: !<reference> b5c91ee7-94b7-45b5-aadd-a7cf0d11e4a3
+    Convex: false
+    Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  Matter: !<reference> 00000000-0000-0000-0000-000000000000
+  Filter: !<reference> 00000000-0000-0000-0000-000000000000
+  OverlapFilter: !<reference> 00000000-0000-0000-0000-000000000000
+  WorldSettings: !<reference> 00000000-0000-0000-0000-000000000000
+  EnableSmoothing: false
+  PositionTension: 30.000000
+  RotationTension: 30.000000
+  ForceCompound: false
+  Intangible: false
+  ShowCollider: false
+  Dynamic: false
+  BodySetting: Density
+  BodySettingValue: 1.000000
+  Damping: 0.000000
+  AngularDamping: 0.000000
+- !<SceneObject/ee0f87ce-57f6-4202-55d0-6536e60ccea2>
+  PrefabRemaps:
+    []
+  Name: Deer
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 80.000000, y: 80.000000, z: 80.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 24be0c92-7ffa-43c5-4b49-7f986475cea5
+  Components:
+    []

@@ -7,13 +7,14 @@ export class CustomPinchButton extends BaseScriptComponent {
   interactable: Interactable
 
   @input
+  @allowUndefined
   rmv: RenderMeshVisual
 
   private targetVal: number = 0
   private mat: Material = null
 
   onAwake() {
-    this.mat = this.rmv.mainMaterial
+    if (this.rmv) this.mat = this.rmv.mainMaterial
     this.interactable.onHoverEnter.add(() => this.onHoverEnter())
     this.interactable.onHoverExit.add(() => this.onHoverExit())
     this.interactable.onTriggerStart.add(() => this.onTriggerEnter())
@@ -22,7 +23,7 @@ export class CustomPinchButton extends BaseScriptComponent {
   }
 
   private onUpdate() {
-    // Lerp to target
+    if (!this.mat) return
     let val = this.mat.mainPass.hover
     val = lerp(val, this.targetVal, 3 * getDeltaTime())
     this.mat.mainPass.hover = val

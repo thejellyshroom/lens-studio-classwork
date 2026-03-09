@@ -1,0 +1,47 @@
+- !<AssetImportMetadata/e8a5d96f-a2d9-42d8-a3a7-fac362b06747>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 257265d8-5723-4a59-9859-70028f68d5d4
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 257265d8-5723-4a59-9859-70028f68d5d4
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> a0fb79b2-b5fb-401c-84a2-866eae144230
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/a0fb79b2-b5fb-401c-84a2-866eae144230>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: ee1ed572-f51b-4de3-befb-d90ebddb57f5
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    distance: false
+    mainCamera: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - mainCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      distance: !<float> 80.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.Camera mainCamera
+    - // @input float distance = 80

@@ -30,7 +30,8 @@ export class BuildingPathState implements IPathMakerState {
     protected cameraTransform: Transform,
     protected cameraOffsetTransform: Transform,
     protected pathRmv: RenderMeshVisual,
-    protected pathDistanceText: Text,
+    protected pathDistanceText: Text | undefined,
+    protected pathDistanceTextDashboard: Text | undefined,
     protected startPosition: vec3,
     protected startRotation: quat,
     protected startObject: SceneObject,
@@ -59,6 +60,9 @@ export class BuildingPathState implements IPathMakerState {
     protected achievementTracker: AchievementTracker | undefined,
     protected inventory: Inventory | undefined,
     protected pfbTouchGrassCollectible: ObjectPrefab | undefined,
+    protected pfbArtifact1: ObjectPrefab | undefined,
+    protected pfbArtifact2: ObjectPrefab | undefined,
+    protected pfbArtifact3: ObjectPrefab | undefined,
     protected soundController: any
   ) {
     this.startTransform = this.startObject.getTransform()
@@ -93,6 +97,10 @@ export class BuildingPathState implements IPathMakerState {
   protected touchGrassSpawnedThisPath = false
   protected placeFromInventoryRemover: (() => void) | undefined
   protected pendingPlaceFromInventoryAchievementId: string | null = null
+  protected artifactChoice1Remover: (() => void) | undefined
+  protected artifactChoice2Remover: (() => void) | undefined
+  protected artifactChoice3Remover: (() => void) | undefined
+  protected pendingArtifactChoice: number | null = null
 
   // To clear on start()
   protected prevCameraPositionForVisual: vec3 | undefined
@@ -129,6 +137,8 @@ export class BuildingPathState implements IPathMakerState {
     this.previewPoints = []
     this.pathPoints = []
     this.pathLength = 0
+    if (this.pathDistanceText) this.pathDistanceText.text = "0.0'"
+    if (this.pathDistanceTextDashboard) this.pathDistanceTextDashboard.text = "0.0'"
     this.isLoop = false
     this.isUiShown = false
     const lineCtrl = this.startObject.getComponent(LineController.getTypeName())
@@ -179,7 +189,10 @@ export class BuildingPathState implements IPathMakerState {
 
     if (this.pfbSpawnObject) {
       this.spawnClickedRemover = this.ui.spawnObjectClicked.add(() => {
-        // Single "Place artifact" button: if user has inventory, place-from-inventory flow (voice then place, no consumption); else show message or normal place
+        // Single "Place artifact" button:
+        // 1. If user has inventory, place-from-inventory flow (voice then place, no consumption)
+        // 2. If no inventory, show "no collected artifacts" message (if configured)
+        // 3. Otherwise, start artifact selection flow (choose prefab), then recording, then place
         if (this.inventory && this.inventory.hasAny()) {
           const entries = this.inventory.getEntries()
           if (entries.length > 0) {
@@ -211,6 +224,22 @@ export class BuildingPathState implements IPathMakerState {
         if (entries.length > 0) this.onPlaceFromInventoryRequested(entries[0].achievementId)
       })
     }
+
+    if ((this.ui as any).artifactChoice1Clicked) {
+      this.artifactChoice1Remover = (this.ui as any).artifactChoice1Clicked.add(() => {
+        this.onArtifactChoiceSelected(1)
+      })
+    }
+    if ((this.ui as any).artifactChoice2Clicked) {
+      this.artifactChoice2Remover = (this.ui as any).artifactChoice2Clicked.add(() => {
+        this.onArtifactChoiceSelected(2)
+      })
+    }
+    if ((this.ui as any).artifactChoice3Clicked) {
+      this.artifactChoice3Remover = (this.ui as any).artifactChoice3Clicked.add(() => {
+        this.onArtifactChoiceSelected(3)
+      })
+    }
     this.updateEvent = this.ownerScript.createEvent("UpdateEvent")
     this.updateEvent.bind(() => {
       this.onUpdate()
@@ -236,13 +265,55 @@ export class BuildingPathState implements IPathMakerState {
     const spawnPos = new vec3(camPos.x, groundY, camPos.z).add(flatAhead.uniformScale(totalForward))
     const spawnRot = quat.lookAt(flatAhead, vec3.up())
 
+    this.pendingArtifact = {spawnPos, spawnRot}
+    this.pendingArtifactChoice = null
+
+    // New flow: first open artifact-selection UI (if available), then recording, then placement.
+    if (typeof (this.ui as any).showArtifactSelection === "function") {
+      ;(this.ui as any).showArtifactSelection()
+      return
+    }
+
     if (this.microphoneRecorder && this.ui.recordVoicePackageUI) {
-      this.pendingArtifact = {spawnPos, spawnRot}
-      this.ui.showRecordVoicePackageUI()
+      ;(this.ui as any).showRecordVoicePackageUI()
       this.subscribeRecordVoiceEvents()
     } else {
       this.placeArtifactAt(spawnPos, spawnRot, null)
+      this.pendingArtifact = null
     }
+  }
+
+  private onArtifactChoiceSelected(choiceIndex: number) {
+    const pfb = this.getArtifactPrefabForChoice(choiceIndex)
+    if (!pfb) return
+
+    if (!this.pendingArtifact) {
+      this.pendingArtifact = {
+        spawnPos: this.getCollectibleSpawnPosition(),
+        spawnRot: this.getCollectibleSpawnRotation()
+      }
+    }
+    this.pendingArtifactChoice = choiceIndex
+    if (typeof (this.ui as any).hideArtifactSelection === "function") {
+      ;(this.ui as any).hideArtifactSelection()
+    }
+
+    if (this.microphoneRecorder && this.ui.recordVoicePackageUI) {
+      ;(this.ui as any).showRecordVoicePackageUI()
+      this.subscribeRecordVoiceEvents()
+      return
+    }
+
+    this.placeArtifactAt(this.pendingArtifact.spawnPos, this.pendingArtifact.spawnRot, null, pfb)
+    this.pendingArtifact = null
+    this.pendingArtifactChoice = null
+  }
+
+  private getArtifactPrefabForChoice(choiceIndex: number): ObjectPrefab | undefined {
+    if (choiceIndex === 1) return this.pfbArtifact1
+    if (choiceIndex === 2) return this.pfbArtifact2
+    if (choiceIndex === 3) return this.pfbArtifact3
+    return undefined
   }
 
   private subscribeRecordVoiceEvents() {
@@ -277,21 +348,24 @@ export class BuildingPathState implements IPathMakerState {
       if (!this.pendingArtifact) return
       const frames = this.pendingRecordingFrames != null ? this.pendingRecordingFrames : (this.microphoneRecorder != null ? this.microphoneRecorder.getRecordedFramesCopy() : [])
       this.pendingRecordingFrames = null
-      const prefabOverride =
-        this.pendingPlaceFromInventoryAchievementId === BuildingPathState.TOUCH_GRASS_ID
-          ? this.pfbTouchGrassCollectible
-          : undefined
+      let prefabOverride: ObjectPrefab | undefined
+      if (this.pendingPlaceFromInventoryAchievementId === BuildingPathState.TOUCH_GRASS_ID) {
+        prefabOverride = this.pfbTouchGrassCollectible
+      } else if (this.pendingArtifactChoice != null) {
+        prefabOverride = this.getArtifactPrefabForChoice(this.pendingArtifactChoice)
+      }
       const pfb = prefabOverride != null ? prefabOverride : this.pfbSpawnObject
       if (!pfb) {
         this.pendingArtifact = null
         this.pendingPlaceFromInventoryAchievementId = null
+        this.pendingArtifactChoice = null
         return
       }
-      // Place-from-inventory: we do NOT call inventory.takeOne — nothing is consumed
       print("[BuildingPathState] Confirm: placing artifact with " + (frames ? frames.length : 0) + " frames")
       this.placeArtifactAt(this.pendingArtifact.spawnPos, this.pendingArtifact.spawnRot, frames, prefabOverride)
       this.pendingArtifact = null
       this.pendingPlaceFromInventoryAchievementId = null
+      this.pendingArtifactChoice = null
     } finally {
       this.unsubscribeRecordVoiceEvents()
       this.ui.hideRecordVoice()
@@ -302,6 +376,7 @@ export class BuildingPathState implements IPathMakerState {
   private onRecordVoiceCancel() {
     this.pendingArtifact = null
     this.pendingPlaceFromInventoryAchievementId = null
+    this.pendingArtifactChoice = null
     this.pendingRecordingFrames = null
     this.unsubscribeRecordVoiceEvents()
     this.ui.hideRecordVoice()
@@ -484,7 +559,14 @@ export class BuildingPathState implements IPathMakerState {
     this.spawnClickedRemover?.()
     this.spawnClickedRemover = undefined
     this.unsubscribeRecordVoiceEvents()
+    this.artifactChoice1Remover?.()
+    this.artifactChoice1Remover = undefined
+    this.artifactChoice2Remover?.()
+    this.artifactChoice2Remover = undefined
+    this.artifactChoice3Remover?.()
+    this.artifactChoice3Remover = undefined
     this.pendingArtifact = null
+    this.pendingArtifactChoice = null
     this.pendingRecordingFrames = null
     this.ui.hideRecordVoice()
     if (this.updateEvent) {
@@ -557,7 +639,9 @@ export class BuildingPathState implements IPathMakerState {
       // Update our path distance
       this.pathLength += bigDistanceMoved
       const pathDistFt = Conversions.cmToFeet(this.pathLength)
-      this.pathDistanceText.text = pathDistFt.toFixed(1) + "'"
+      const distStr = pathDistFt.toFixed(1) + "'"
+      if (this.pathDistanceText) this.pathDistanceText.text = distStr
+      if (this.pathDistanceTextDashboard) this.pathDistanceTextDashboard.text = distStr
 
       // Push a subset of points to the path array
       this.pathPoints.push(nPos)

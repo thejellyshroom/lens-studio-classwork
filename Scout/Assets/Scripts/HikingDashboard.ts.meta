@@ -1,0 +1,53 @@
+- !<AssetImportMetadata/3c8b82c4-ab23-4929-ab48-d7c9288b2619>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 3fa956b4-47f1-49d3-8f05-1d6c6ce972b3
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 3fa956b4-47f1-49d3-8f05-1d6c6ce972b3
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> f469e7a5-9e8b-41c0-817e-60033d63ac85
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/f469e7a5-9e8b-41c0-817e-60033d63ac85>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: bac305d6-2553-44ba-93a5-7130e5d9b3ea
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    altText: false
+    distanceText: false
+    elapsedText: false
+    paceText: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - elapsedText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      paceText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      distanceText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      altText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.Text elapsedText
+    - // @input Component.Text paceText
+    - // @input Component.Text distanceText
+    - // @input Component.Text altText

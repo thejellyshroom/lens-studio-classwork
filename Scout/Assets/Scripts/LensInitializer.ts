@@ -1,4 +1,5 @@
 import {SprintPathData} from "./BuiltPathData"
+import {HikingDashboard} from "./HikingDashboard"
 import {PathMaker} from "./PathMaker"
 import {PathWalker} from "./PathWalker"
 import {TutorialController} from "./TutorialController"
@@ -21,7 +22,17 @@ export class LensInitializer extends BaseScriptComponent {
   @input
   camSo: SceneObject
 
+  @input
+  @allowUndefined
+  dashboardRoot: SceneObject
+
+  @input
+  @allowUndefined
+  hikingDashboard: HikingDashboard
+
   private camTr: Transform
+  private hikeStartedRemover: (() => void) | undefined
+  private hikeEndedRemover: (() => void) | undefined
 
   private floorOffsetFromCamera = -100
 
@@ -56,8 +67,53 @@ export class LensInitializer extends BaseScriptComponent {
 
     this.ui.getSceneObject().enabled = true
 
+    if (this.dashboardRoot) this.dashboardRoot.enabled = false
+
     this.tutorialController.startTutorial(() => {
-      this.startHomeState()
+      if (this.dashboardRoot && this.hikingDashboard) {
+        this.startDashboardState()
+      } else {
+        this.ui.hideUi()
+      }
+    })
+  }
+
+  private startDashboardState() {
+    this.ui.hideUi()
+    if (this.dashboardRoot) this.dashboardRoot.enabled = true
+
+    this.hikeStartedRemover?.()
+    this.hikeStartedRemover = undefined
+    this.hikeEndedRemover?.()
+    this.hikeEndedRemover = undefined
+
+    this.hikeStartedRemover = this.hikingDashboard.hikeStarted.add(() => {
+      this.pathMaker.start()
+      const remover = this.pathMaker.pathMade.add((data) => {
+        remover()
+        if (!data.isLoop) {
+          const dataSprint = data as SprintPathData
+          this.pathWalker.start(
+            dataSprint.splinePoints,
+            dataSprint.isLoop,
+            dataSprint.startObject.getTransform(),
+            dataSprint.finishObject.getTransform(),
+            () => {
+              this.startDashboardState()
+            }
+          )
+        } else {
+          this.pathWalker.start(data.splinePoints, data.isLoop, data.startObject.getTransform(), undefined, () => {
+            this.startDashboardState()
+          })
+        }
+      })
+    })
+
+    this.hikeEndedRemover = this.hikingDashboard.hikeEnded.add(() => {
+      this.hikeEndedRemover?.()
+      this.hikeEndedRemover = undefined
+      this.ui.onFinishCreatePathButton()
     })
   }
 
@@ -77,32 +133,5 @@ export class LensInitializer extends BaseScriptComponent {
       throw Error("Floor not set. You need to call it later.")
     }
     return this.camTr.getWorldPosition().add(this.vec3up.uniformScale(this.floorOffsetFromCamera))
-  }
-
-  private startHomeState() {
-    this.ui.showHomeUi()
-    const pathClickedRemover = this.ui.createPathClicked.add(() => {
-      pathClickedRemover()
-      this.pathMaker.start()
-      const remover = this.pathMaker.pathMade.add((data) => {
-        remover()
-        if (!data.isLoop) {
-          const dataSprint = data as SprintPathData
-          this.pathWalker.start(
-            dataSprint.splinePoints,
-            dataSprint.isLoop,
-            dataSprint.startObject.getTransform(),
-            dataSprint.finishObject.getTransform(),
-            () => {
-              this.startHomeState()
-            }
-          )
-        } else {
-          this.pathWalker.start(data.splinePoints, data.isLoop, data.startObject.getTransform(), undefined, () => {
-            this.startHomeState()
-          })
-        }
-      })
-    })
   }
 }

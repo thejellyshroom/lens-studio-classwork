@@ -27,6 +27,8 @@
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
     camSo: false
+    dashboardRoot: false
+    hikingDashboard: false
     pathMaker: false
     pathWalker: false
     tutorialController: false
@@ -45,6 +47,8 @@
       pathMaker: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
       pathWalker: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
       camSo: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      dashboardRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      hikingDashboard: !<MappingBased.AssignableType_4> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -54,3 +58,5 @@
     - // @input AssignableType_2 pathMaker
     - // @input AssignableType_3 pathWalker
     - // @input SceneObject camSo
+    - // @input SceneObject dashboardRoot
+    - // @input AssignableType_4 hikingDashboard

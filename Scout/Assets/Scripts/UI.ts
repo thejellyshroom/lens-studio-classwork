@@ -2,15 +2,19 @@ import Event from "SpectaclesInteractionKit.lspkg/Utils/Event"
 import {Conversions} from "./Conversions"
 import {LoopController} from "./LoopController"
 
+/**
+ * Scout UI — flow: Warning tutorial → Dashboard (or pathmaking). No home/tutorial panels.
+ * Kept: warning tutorial, record voice, artifact selection, noCollectedArtifacts,
+ * collectibleNearby, loop/goToStart/endSession. During-path "keep moving" UI is optional;
+ * End on the hiking dashboard calls onFinishCreatePathButton() (finish path).
+ */
 @component
 export class UI extends BaseScriptComponent {
   @input
   camObj: SceneObject
 
   @input
-  homeUI: SceneObject
-
-  @input
+  @allowUndefined
   duringPathCreationUI: SceneObject
 
   @input
@@ -32,15 +36,6 @@ export class UI extends BaseScriptComponent {
   warningTutorialUI: SceneObject
 
   @input
-  tutorialUI: SceneObject
-
-  @input
-  tutorialAnimationPlayer: AnimationPlayer
-
-  @input
-  tutorialText: Text
-
-  @input
   @allowUndefined
   recordVoicePackageUI: SceneObject
 
@@ -60,9 +55,9 @@ export class UI extends BaseScriptComponent {
   @allowUndefined
   noCollectedArtifactsUI: SceneObject
 
-  get createPathClicked() {
-    return this.createPathClickedEvent.publicApi()
-  }
+  @input
+  @allowUndefined
+  artifactSelectionUI: SceneObject
 
   get resetPathClicked() {
     return this.resetPathClickedEvent.publicApi()
@@ -108,7 +103,18 @@ export class UI extends BaseScriptComponent {
     return this.placeFromInventoryClickedEvent.publicApi()
   }
 
-  private createPathClickedEvent: Event = new Event()
+  get artifactChoice1Clicked() {
+    return this.artifactChoice1ClickedEvent.publicApi()
+  }
+
+  get artifactChoice2Clicked() {
+    return this.artifactChoice2ClickedEvent.publicApi()
+  }
+
+  get artifactChoice3Clicked() {
+    return this.artifactChoice3ClickedEvent.publicApi()
+  }
+
   private resetPathClickedEvent: Event = new Event()
   private finishPathClickedEvent: Event = new Event()
   private loopPathClickedEvent: Event = new Event()
@@ -120,28 +126,26 @@ export class UI extends BaseScriptComponent {
   private recordVoiceCancelClickedEvent: Event = new Event()
   private recordVoiceDoneClickedEvent: Event = new Event()
   private placeFromInventoryClickedEvent: Event = new Event()
+  private artifactChoice1ClickedEvent: Event = new Event()
+  private artifactChoice2ClickedEvent: Event = new Event()
+  private artifactChoice3ClickedEvent: Event = new Event()
 
-  private warningTr = null
-  private tutorialTr = null
-  private homeTr = null
-  private duringPathCreationUiTr: Transform = null
+  private warningTr: Transform = null
+  private duringPathCreationUiTr: Transform | null = null
   private goToStartUiTr: Transform = null
   private endSessionUiTr: Transform = null
   private recordVoicePackageTr: Transform = null
   private recordVoiceConfirmTr: Transform = null
   private collectibleNearbyTr: Transform | null = null
   private noCollectedArtifactsTr: Transform | null = null
+  private artifactSelectionTr: Transform | null = null
   private currentActiveTr: Transform = null
-
-  private tutorialStepCount: number = 0
 
   private loopUiController: LoopController | undefined
 
   onAwake() {
     this.warningTr = this.warningTutorialUI.getTransform()
-    this.tutorialTr = this.tutorialUI.getTransform()
-    this.homeTr = this.homeUI.getTransform()
-    this.duringPathCreationUiTr = this.duringPathCreationUI.getTransform()
+    if (this.duringPathCreationUI) this.duringPathCreationUiTr = this.duringPathCreationUI.getTransform()
     this.goToStartUiTr = this.goToStartUI.getTransform()
     this.endSessionUiTr = this.endSessionUI.getTransform()
     if (this.recordVoicePackageUI) this.recordVoicePackageTr = this.recordVoicePackageUI.getTransform()
@@ -150,10 +154,11 @@ export class UI extends BaseScriptComponent {
     if (this.collectibleNearbyTr) this.hide(this.collectibleNearbyTr)
     if (this.noCollectedArtifactsUI) this.noCollectedArtifactsTr = this.noCollectedArtifactsUI.getTransform()
     if (this.noCollectedArtifactsTr) this.hide(this.noCollectedArtifactsTr)
+    if (this.artifactSelectionUI) this.artifactSelectionTr = this.artifactSelectionUI.getTransform()
+    if (this.artifactSelectionTr) this.hide(this.artifactSelectionTr)
 
-    this.hide(this.tutorialTr)
-    this.hide(this.homeTr)
-    this.hide(this.duringPathCreationUiTr)
+    this.hide(this.warningTr)
+    if (this.duringPathCreationUiTr) this.hide(this.duringPathCreationUiTr)
     this.hide(this.goToStartUiTr)
     this.hide(this.endSessionUiTr)
     if (this.recordVoicePackageTr) this.hide(this.recordVoicePackageTr)
@@ -209,21 +214,19 @@ export class UI extends BaseScriptComponent {
     this.recordVoiceCancelClickedEvent.invoke()
   }
 
-  showHomeUi() {
-    this.tryHideCurrentActive()
-    this.currentActiveTr = this.homeTr
-    this.show(this.currentActiveTr)
-  }
-
+  /** Shows the warning tutorial panel only. Wire a button to onProgressTutorial to dismiss and complete. */
   showTutorialUi() {
     this.tryHideCurrentActive()
-    this.tutorialStepCount = 0
     this.currentActiveTr = this.warningTr
     this.show(this.currentActiveTr)
   }
 
   showDuringPathCreationUi() {
     this.tryHideCurrentActive()
+    if (!this.duringPathCreationUiTr) {
+      this.currentActiveTr = null
+      return
+    }
     this.currentActiveTr = this.duringPathCreationUiTr
     this.show(this.currentActiveTr)
   }
@@ -262,31 +265,17 @@ export class UI extends BaseScriptComponent {
     this.currentActiveTr = null
   }
 
+  /** Dismiss warning and complete tutorial (wire to the warning panel’s button). */
   onProgressTutorial() {
-    if (this.tutorialStepCount === 0) {
-      this.tryHideCurrentActive()
-      this.currentActiveTr = this.tutorialTr
-      this.show(this.currentActiveTr)
-    } else if (this.tutorialStepCount === 1) {
-      this.tutorialAnimationPlayer.setClipEnabled("Sprint_Layer", false)
-      this.tutorialAnimationPlayer.setClipEnabled("Loop_Layer", true)
-      this.tutorialText.text = "MAKE A LOOP"
-    } else if (this.tutorialStepCount === 2) {
-      this.hide(this.tutorialTr)
-      this.tutorialCompleteEvent.invoke()
-    }
-    this.tutorialStepCount += 1
-  }
-
-  onCreatePathButton() {
-    this.hide(this.homeTr)
-    this.createPathClickedEvent.invoke()
+    if (this.warningTr) this.hide(this.warningTr)
+    if (this.currentActiveTr === this.warningTr) this.currentActiveTr = null
+    this.tutorialCompleteEvent.invoke()
   }
 
   onFinishCreatePathButton() {
-    this.hide(this.duringPathCreationUiTr)
+    if (this.duringPathCreationUiTr) this.hide(this.duringPathCreationUiTr)
 
-    if (this.loopUiController.getIsInLoopZone()) {
+    if (this.loopUiController && this.loopUiController.getIsInLoopZone()) {
       this.loopUiController.onLock()
       this.loopPathClickedEvent.invoke()
     } else {
@@ -295,7 +284,7 @@ export class UI extends BaseScriptComponent {
   }
 
   onResetCreatePathButton() {
-    this.hide(this.duringPathCreationUiTr)
+    if (this.duringPathCreationUiTr) this.hide(this.duringPathCreationUiTr)
     this.resetPathClickedEvent.invoke()
   }
 
@@ -305,6 +294,18 @@ export class UI extends BaseScriptComponent {
 
   onPlaceFromInventoryButton() {
     this.placeFromInventoryClickedEvent.invoke()
+  }
+
+  onArtifactChoice1Button() {
+    this.artifactChoice1ClickedEvent.invoke()
+  }
+
+  onArtifactChoice2Button() {
+    this.artifactChoice2ClickedEvent.invoke()
+  }
+
+  onArtifactChoice3Button() {
+    this.artifactChoice3ClickedEvent.invoke()
   }
 
   showCollectibleNearby(distanceCm: number, _worldPosition: vec3) {
@@ -323,6 +324,21 @@ export class UI extends BaseScriptComponent {
     const localPos = this.collectibleNearbyTr.getLocalPosition()
     localPos.y = 10000
     this.collectibleNearbyTr.setLocalPosition(localPos)
+  }
+
+  showArtifactSelection() {
+    if (!this.artifactSelectionTr) return
+    this.tryHideCurrentActive()
+    this.currentActiveTr = this.artifactSelectionTr
+    this.show(this.currentActiveTr)
+  }
+
+  hideArtifactSelection() {
+    if (!this.artifactSelectionTr) return
+    if (this.currentActiveTr === this.artifactSelectionTr) {
+      this.currentActiveTr = null
+    }
+    this.hide(this.artifactSelectionTr)
   }
 
   showNoCollectedArtifacts() {

@@ -1,0 +1,74 @@
+- !<AssetImportMetadata/9940021c-34c1-e6bf-26e7-279ebd6f053d>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> a5d65d22-f49a-47e9-a3c8-4e0e75dd3d8f
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> a5d65d22-f49a-47e9-a3c8-4e0e75dd3d8f
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 71f28e3a-be52-4c37-9d1a-0fff0739f618
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/71f28e3a-be52-4c37-9d1a-0fff0739f618>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: b898e434-c949-41d4-89ab-62ce8486f5bf
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    artifact1Button: false
+    artifact2Button: false
+    artifact3Button: false
+    closeButton: false
+    dashboardScript: false
+    endButton: false
+    menuButton: false
+    menuToggleGroup: false
+    pauseButton: false
+    scoutUi: false
+    startButton: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - menuToggleGroup: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      menuButton: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      closeButton: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      startButton: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      pauseButton: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      endButton: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      dashboardScript: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      scoutUi: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      artifact1Button: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      artifact2Button: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      artifact3Button: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input SceneObject menuToggleGroup
+    - // @input Component.ScriptComponent menuButton
+    - // @input Component.ScriptComponent closeButton
+    - // @input Component.ScriptComponent startButton
+    - // @input Component.ScriptComponent pauseButton
+    - // @input Component.ScriptComponent endButton
+    - // @input Component.ScriptComponent dashboardScript
+    - // @input Component.ScriptComponent scoutUi
+    - // @input Component.ScriptComponent artifact1Button
+    - // @input Component.ScriptComponent artifact2Button
+    - // @input Component.ScriptComponent artifact3Button

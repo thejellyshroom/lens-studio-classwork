@@ -33,8 +33,12 @@
     inventory: false
     microphoneRecorder: false
     pathDistText: false
+    pathDistTextDashboard: false
     pathRmv: false
     pathmakingPlayerFeedback: false
+    pfbArtifact1: false
+    pfbArtifact2: false
+    pfbArtifact3: false
     pfbLine: false
     pfbSpawnObject: false
     pfbSurfaceDetection: false
@@ -59,6 +63,7 @@
       camObj: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       camObjOffset: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pathDistText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      pathDistTextDashboard: !<reference.Text> 00000000-0000-0000-0000-000000000000
       finalPathDistText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       playerPaceCalculator: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
       pathmakingPlayerFeedback: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
@@ -70,6 +75,9 @@
       achievementTracker: !<MappingBased.AssignableType_4> 00000000-0000-0000-0000-000000000000
       inventory: !<MappingBased.AssignableType_5> 00000000-0000-0000-0000-000000000000
       pfbTouchGrassCollectible: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      pfbArtifact1: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      pfbArtifact2: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      pfbArtifact3: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
       soundController: !<MappingBased.AssignableType_6> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
@@ -81,6 +89,7 @@
     - // @input SceneObject camObj
     - // @input SceneObject camObjOffset
     - // @input Component.Text pathDistText
+    - // @input Component.Text pathDistTextDashboard
     - // @input Component.Text finalPathDistText
     - // @input AssignableType playerPaceCalculator
     - // @input AssignableType_1 pathmakingPlayerFeedback
@@ -92,4 +101,7 @@
     - // @input AssignableType_4 achievementTracker
     - // @input AssignableType_5 inventory
     - // @input Asset.ObjectPrefab pfbTouchGrassCollectible
+    - // @input Asset.ObjectPrefab pfbArtifact1
+    - // @input Asset.ObjectPrefab pfbArtifact2
+    - // @input Asset.ObjectPrefab pfbArtifact3
     - // @input AssignableType_6 soundController

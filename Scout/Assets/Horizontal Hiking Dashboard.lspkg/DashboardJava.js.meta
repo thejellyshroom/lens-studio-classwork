@@ -1,0 +1,46 @@
+- !<AssetImportMetadata/e3df44c5-4855-adef-71d8-e2050c02ceec>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> c098cae5-058b-47c9-833f-61bd7605612e
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> c098cae5-058b-47c9-833f-61bd7605612e
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> 0dd9ec67-dd6c-4432-beeb-3aa8dcf213f7
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/0dd9ec67-dd6c-4432-beeb-3aa8dcf213f7>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 28ab7397-212c-4dbb-820d-638eba548aec
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    DistanceText: false
+    ElapsedText: false
+    PaceText: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - PaceText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      DistanceText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      ElapsedText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}

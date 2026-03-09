@@ -34,7 +34,13 @@ export class PathMaker extends BaseScriptComponent {
   camObjOffset: SceneObject
 
   @input
+  @allowUndefined
   pathDistText: Text
+
+  /** When set, path distance is also written here (e.g. dashboard distance text). */
+  @input
+  @allowUndefined
+  pathDistTextDashboard: Text
 
   @input
   finalPathDistText: Text
@@ -76,6 +82,18 @@ export class PathMaker extends BaseScriptComponent {
 
   @input
   @allowUndefined
+  pfbArtifact1: ObjectPrefab
+
+  @input
+  @allowUndefined
+  pfbArtifact2: ObjectPrefab
+
+  @input
+  @allowUndefined
+  pfbArtifact3: ObjectPrefab
+
+  @input
+  @allowUndefined
   soundController: SoundController
 
   private camTr: Transform = null
@@ -97,6 +115,13 @@ export class PathMaker extends BaseScriptComponent {
   public init() {
     this.camTr = this.camObj.getTransform()
     this.camOffsetTr = this.camObjOffset.getTransform()
+  }
+
+  /** Stops the current path state and returns to idle (e.g. when user taps End on dashboard). */
+  public stop() {
+    this.currentState.stop()
+    this.currentState = new IdleState()
+    this.currentState.start()
   }
 
   public start() {
@@ -140,6 +165,7 @@ export class PathMaker extends BaseScriptComponent {
       this.camOffsetTr,
       this.pathRmv,
       this.pathDistText,
+      this.pathDistTextDashboard,
       startPosition,
       startRotation,
       startObject,
@@ -163,6 +189,9 @@ export class PathMaker extends BaseScriptComponent {
       this.achievementTracker,
       this.inventory,
       this.pfbTouchGrassCollectible,
+      this.pfbArtifact1,
+      this.pfbArtifact2,
+      this.pfbArtifact3,
       this.soundController
     )
     this.currentState.start()

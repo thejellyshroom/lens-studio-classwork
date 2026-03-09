@@ -26,6 +26,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    artifactSelectionUI: false
     backplateSo: false
     camObj: false
     collectibleNearbyText: false
@@ -34,14 +35,10 @@
     endSessionUI: false
     goToStartUI: false
     goToStartUiDistance: false
-    homeUI: false
     noCollectedArtifactsUI: false
     pfbLoopUi: false
     recordVoiceConfirmUI: false
     recordVoicePackageUI: false
-    tutorialAnimationPlayer: false
-    tutorialText: false
-    tutorialUI: false
     warningTutorialUI: false
   ScriptTypesHidden:
     {}
@@ -53,7 +50,6 @@
     []
   DefaultScriptInputs:
     - camObj: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      homeUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       duringPathCreationUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       goToStartUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       goToStartUiDistance: !<reference.Text> 00000000-0000-0000-0000-000000000000
@@ -61,20 +57,17 @@
       pfbLoopUi: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
       backplateSo: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       warningTutorialUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      tutorialUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      tutorialAnimationPlayer: !<reference.AnimationPlayer> 00000000-0000-0000-0000-000000000000
-      tutorialText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       recordVoicePackageUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       recordVoiceConfirmUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       collectibleNearbyUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       collectibleNearbyText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       noCollectedArtifactsUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      artifactSelectionUI: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
   InputLines:
     - // @input SceneObject camObj
-    - // @input SceneObject homeUI
     - // @input SceneObject duringPathCreationUI
     - // @input SceneObject goToStartUI
     - // @input Component.Text goToStartUiDistance
@@ -82,11 +75,9 @@
     - // @input Asset.ObjectPrefab pfbLoopUi
     - // @input SceneObject backplateSo
     - // @input SceneObject warningTutorialUI
-    - // @input SceneObject tutorialUI
-    - // @input Component.AnimationPlayer tutorialAnimationPlayer
-    - // @input Component.Text tutorialText
     - // @input SceneObject recordVoicePackageUI
     - // @input SceneObject recordVoiceConfirmUI
     - // @input SceneObject collectibleNearbyUI
     - // @input Component.Text collectibleNearbyText
     - // @input SceneObject noCollectedArtifactsUI
+    - // @input SceneObject artifactSelectionUI
