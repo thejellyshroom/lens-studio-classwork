@@ -32,6 +32,7 @@ export class BuildingPathState implements IPathMakerState {
     protected pathRmv: RenderMeshVisual,
     protected pathDistanceText: Text | undefined,
     protected pathDistanceTextDashboard: Text | undefined,
+    protected paceTextDashboard: Text | undefined,
     protected startPosition: vec3,
     protected startRotation: quat,
     protected startObject: SceneObject,
@@ -139,6 +140,7 @@ export class BuildingPathState implements IPathMakerState {
     this.pathLength = 0
     if (this.pathDistanceText) this.pathDistanceText.text = "0.0'"
     if (this.pathDistanceTextDashboard) this.pathDistanceTextDashboard.text = "0.0'"
+    if (this.paceTextDashboard) this.paceTextDashboard.text = "0.0 mi/hr"
     this.isLoop = false
     this.isUiShown = false
     const lineCtrl = this.startObject.getComponent(LineController.getTypeName())
@@ -590,6 +592,12 @@ export class BuildingPathState implements IPathMakerState {
 
     // During-path-creation UI is shown for the whole building phase (from start()); loop UI still toggles by proximity
     const nPos = LensInitializer.getInstance().getPlayerGroundPos()
+
+    const paceStats = this.paceCalculator.getPace(nPos)
+    if (this.paceTextDashboard) {
+      const paceMph = Conversions.cmPerSecToMPH(paceStats.pace)
+      this.paceTextDashboard.text = paceMph.toFixed(1) + " mi/hr"
+    }
 
     this.trySpawnTouchGrassCollectible()
     this.updateCollectiblesProximity(nPos)

@@ -42,6 +42,11 @@ export class PathMaker extends BaseScriptComponent {
   @allowUndefined
   pathDistTextDashboard: Text
 
+  /** When set, current pace is written here (e.g. dashboard pace text). */
+  @input
+  @allowUndefined
+  paceTextDashboard: Text
+
   @input
   finalPathDistText: Text
 
@@ -166,6 +171,7 @@ export class PathMaker extends BaseScriptComponent {
       this.pathRmv,
       this.pathDistText,
       this.pathDistTextDashboard,
+      this.paceTextDashboard,
       startPosition,
       startRotation,
       startObject,

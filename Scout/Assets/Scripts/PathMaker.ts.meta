@@ -32,6 +32,7 @@
     finalPathDistText: false
     inventory: false
     microphoneRecorder: false
+    paceTextDashboard: false
     pathDistText: false
     pathDistTextDashboard: false
     pathRmv: false
@@ -64,6 +65,7 @@
       camObjOffset: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pathDistText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       pathDistTextDashboard: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      paceTextDashboard: !<reference.Text> 00000000-0000-0000-0000-000000000000
       finalPathDistText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       playerPaceCalculator: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
       pathmakingPlayerFeedback: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
@@ -90,6 +92,7 @@
     - // @input SceneObject camObjOffset
     - // @input Component.Text pathDistText
     - // @input Component.Text pathDistTextDashboard
+    - // @input Component.Text paceTextDashboard
     - // @input Component.Text finalPathDistText
     - // @input AssignableType playerPaceCalculator
     - // @input AssignableType_1 pathmakingPlayerFeedback

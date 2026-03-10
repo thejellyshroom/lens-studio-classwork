@@ -807,15 +807,15 @@
         id: ce4aded4-8a8e-44b3-970f-90bca9ec1220
         sampler:
           filteringMode: Trilinear
-          wrapModeU: Repeat
-          wrapModeV: Repeat
+          wrapModeU: ClampToEdge
+          wrapModeV: ClampToEdge
           wrapModeW: Repeat
           borderColor: {x: 0.000000, y: 0.000000, z: 0.000000, w: 0.000000}
           mipmaps: true
         type: Texture2D
     Tweak_N19:
       typeIdx: 1
-      value: 1.420000
+      value: 2.000000
     Tweak_N5:
       typeIdx: 5
       value: {x: 0.082353, y: 0.800000, z: 0.945098, w: 1.000000}
