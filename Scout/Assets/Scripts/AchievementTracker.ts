@@ -4,12 +4,22 @@
  */
 @component
 export class AchievementTracker extends BaseScriptComponent {
+  /** When true, all achievements are unlocked from the start (for demos). */
+  @input
+  unlockAllOnStart: boolean = true
+
   private pathElapsedSeconds: number = 0
   private unlockedIds: Set<string> = new Set()
   private updateEvent: SceneEvent | undefined
 
   private static readonly TOUCH_GRASS_SECONDS = 10
   private static readonly TOUCH_GRASS_ID = "touch_grass"
+
+  onAwake() {
+    if (this.unlockAllOnStart) {
+      this.unlockedIds.add(AchievementTracker.TOUCH_GRASS_ID)
+    }
+  }
 
   pathStarted() {
     this.pathElapsedSeconds = 0

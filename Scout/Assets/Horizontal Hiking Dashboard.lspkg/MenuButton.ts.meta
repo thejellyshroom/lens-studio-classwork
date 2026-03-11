@@ -30,6 +30,8 @@
     artifact2Button: false
     artifact3Button: false
     closeButton: false
+    communityArtifactsManager: false
+    communityArtifactsToggleButton: false
     dashboardScript: false
     endButton: false
     menuButton: false
@@ -57,6 +59,8 @@
       artifact1Button: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
       artifact2Button: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
       artifact3Button: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      communityArtifactsToggleButton: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      communityArtifactsManager: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -72,3 +76,5 @@
     - // @input Component.ScriptComponent artifact1Button
     - // @input Component.ScriptComponent artifact2Button
     - // @input Component.ScriptComponent artifact3Button
+    - // @input Component.ScriptComponent communityArtifactsToggleButton
+    - // @input Component.ScriptComponent communityArtifactsManager

@@ -53,6 +53,14 @@ export class MenuController extends BaseScriptComponent {
   @allowUndefined
   artifact3Button: BaseButton
 
+  @input('Component.ScriptComponent')
+  @allowUndefined
+  communityArtifactsToggleButton: BaseButton
+
+  @input('Component.ScriptComponent')
+  @allowUndefined
+  communityArtifactsManager: ScriptComponent & { toggleCommunityArtifacts?: () => void }
+
   private menuTr: Transform = null
   private menuVisible = false
 
@@ -99,6 +107,12 @@ export class MenuController extends BaseScriptComponent {
       addTriggerOnce(this.artifact1Button, () => { this.scoutUi.onArtifactChoice1Button() })
       addTriggerOnce(this.artifact2Button, () => { this.scoutUi.onArtifactChoice2Button() })
       addTriggerOnce(this.artifact3Button, () => { this.scoutUi.onArtifactChoice3Button() })
+    }
+
+    if (this.communityArtifactsManager && this.communityArtifactsManager.toggleCommunityArtifacts) {
+      addTriggerOnce(this.communityArtifactsToggleButton, () => {
+        this.communityArtifactsManager.toggleCommunityArtifacts()
+      })
     }
   }
 

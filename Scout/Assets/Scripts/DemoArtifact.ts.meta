@@ -1,20 +1,20 @@
-- !<AssetImportMetadata/12738dbb-ae47-4285-bb43-3a70e7146ff0>
+- !<AssetImportMetadata/a952ee28-6187-4f6b-85d2-f0cdecfaf47f>
   ImportedAssetIds:
-    TypeScriptAsset: !<reference> d46abef1-8808-4388-8c61-d32b3a532994
+    TypeScriptAsset: !<reference> e83e74dc-3a07-4090-b797-31a797640e97
   ImporterName: TypeScriptAssetImporter
-  PrimaryAsset: !<reference> d46abef1-8808-4388-8c61-d32b3a532994
+  PrimaryAsset: !<reference> e83e74dc-3a07-4090-b797-31a797640e97
   PackageType: NotAPackage
   LegacyPackagePolicy: ~
   ExtraData:
     {}
   AssetDataMap:
-    TypeScriptAsset: !<own> dade27ba-6960-47d8-891d-71316980d6e0
+    TypeScriptAsset: !<own> 655f4b40-08d6-41e9-b879-7ce5c44bebde
   DependentFiles:
     []
   ImporterSettings: !<AssetImporterSettings>
     {}
   CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
-- !<TypeScriptAssetData/dade27ba-6960-47d8-891d-71316980d6e0>
+- !<TypeScriptAssetData/655f4b40-08d6-41e9-b879-7ce5c44bebde>
   SvgIcon: ""
   SetupScript:
     code: ""
@@ -22,11 +22,11 @@
   VersionMajor: 0
   VersionMinor: 0
   VersionPatch: 0
-  ComponentUid: c905e8ea-6619-48a3-ac2f-09496da54886
+  ComponentUid: be4c0418-8338-4a1f-ac2b-a6621fa2dcc9
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    unlockAllOnStart: false
+    audioComponent: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -36,9 +36,9 @@
   Attachments:
     []
   DefaultScriptInputs:
-    - unlockAllOnStart: true
+    - audioComponent: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
   InputLines:
-    - // @input bool unlockAllOnStart = true
+    - // @input Component.AudioComponent audioComponent

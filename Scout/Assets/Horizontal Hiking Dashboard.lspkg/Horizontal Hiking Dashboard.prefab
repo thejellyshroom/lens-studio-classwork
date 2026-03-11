@@ -2213,7 +2213,8 @@
   Enabled: true
   ScriptAsset: !<reference> a5d65d22-f49a-47e9-a3c8-4e0e75dd3d8f
   ScriptInputsDefault:
-    {}
+    communityArtifactsToggleButton: true
+    communityArtifactsManager: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -2229,6 +2230,8 @@
       artifact1Button: !<reference.ScriptComponent> 99643775-3432-4357-8355-071a63e95f0c
       artifact2Button: !<reference.ScriptComponent> 8d2c6d9d-8cf2-4e13-a64c-e6cf624ded9e
       artifact3Button: !<reference.ScriptComponent> 19abe823-6da5-4dc0-b08c-808aeb701eea
+      communityArtifactsToggleButton: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      communityArtifactsManager: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     "":
       {}
