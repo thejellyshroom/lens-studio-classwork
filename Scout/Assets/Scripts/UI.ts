@@ -311,7 +311,7 @@ export class UI extends BaseScriptComponent {
   showCollectibleNearby(distanceCm: number, _worldPosition: vec3) {
     if (!this.collectibleNearbyTr) return
     const meters = (distanceCm / 100).toFixed(1)
-    if (this.collectibleNearbyText) this.collectibleNearbyText.text = "Achievement nearby — " + meters + " m"
+    if (this.collectibleNearbyText) this.collectibleNearbyText.text = "Achievement unlocked! Touch grass for the first time — " + meters + " m"
     const localPos = this.collectibleNearbyTr.getLocalPosition()
     localPos.x = 0
     localPos.y = -5
