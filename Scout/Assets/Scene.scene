@@ -18907,7 +18907,7 @@
     []
   Name: Audio
   Enabled: true
-  AudioTrack: !<reference> 00000000-0000-0000-0000-000000000000
+  AudioTrack: !<reference> 40b0387c-7d9d-4328-a0bf-2d9a5f133d27
   EnableAutoplayLoop: false
   Volume: 1.000000
   EnableMixToSnap: false
@@ -23144,7 +23144,7 @@
     []
   Name: Audio
   Enabled: true
-  AudioTrack: !<reference> 00000000-0000-0000-0000-000000000000
+  AudioTrack: !<reference> 32d5029c-219c-4f51-b6c0-175074d81c6b
   EnableAutoplayLoop: false
   Volume: 1.000000
   EnableMixToSnap: false
@@ -28425,7 +28425,7 @@
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: -15.124100, z: 0.000000}
     Rotation: {x: 90.000008, y: -0.000000, z: 0.000000}
-    Scale: {x: 13.022747, y: 3.937107, z: 3.937107}
+    Scale: {x: 13.102700, y: 3.937107, z: 3.937107}
     HasSegmentScaleCompensation: false
   Children:
     []

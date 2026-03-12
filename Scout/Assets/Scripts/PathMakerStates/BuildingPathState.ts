@@ -140,7 +140,7 @@ export class BuildingPathState implements IPathMakerState {
     this.pathLength = 0
     if (this.pathDistanceText) this.pathDistanceText.text = "0.0'"
     if (this.pathDistanceTextDashboard) this.pathDistanceTextDashboard.text = "0.0'"
-    if (this.paceTextDashboard) this.paceTextDashboard.text = "0.0 mi/hr"
+    if (this.paceTextDashboard) this.paceTextDashboard.text = "--:-- min/mi"
     this.isLoop = false
     this.isUiShown = false
     const lineCtrl = this.startObject.getComponent(LineController.getTypeName())
@@ -595,8 +595,15 @@ export class BuildingPathState implements IPathMakerState {
 
     const paceStats = this.paceCalculator.getPace(nPos)
     if (this.paceTextDashboard) {
-      const paceMph = Conversions.cmPerSecToMPH(paceStats.pace)
-      this.paceTextDashboard.text = paceMph.toFixed(1) + " mi/hr"
+      const minPerMile = Conversions.cmPerSecToMinPerMile(paceStats.pace)
+      if (!isFinite(minPerMile)) {
+        this.paceTextDashboard.text = "--:-- min/mi"
+      } else {
+        const mins = Math.floor(minPerMile)
+        const secs = Math.round((minPerMile - mins) * 60)
+        const ss = secs < 10 ? "0" + secs : "" + secs
+        this.paceTextDashboard.text = mins + ":" + ss + " min/mi"
+      }
     }
 
     this.trySpawnTouchGrassCollectible()

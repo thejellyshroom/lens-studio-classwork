@@ -168,7 +168,7 @@
     baseTex:
       typeIdx: 9
       value:
-        id: 458a74ec-1e9f-4d7b-a6bd-3a2fcb2c6bf8
+        id: 94a3a1c0-bc94-4ca0-a780-5ba6f63a6de5
         sampler:
           filteringMode: Trilinear
           wrapModeU: ClampToEdge
@@ -195,7 +195,7 @@
     text:
       typeIdx: 9
       value:
-        id: 3512064e-7dec-458d-81df-2bba24cadb24
+        id: 94a3a1c0-bc94-4ca0-a780-5ba6f63a6de5
         sampler:
           filteringMode: Trilinear
           wrapModeU: ClampToEdge
@@ -212,5 +212,5 @@
         2: {x: 0.000000, y: 0.000000, z: 1.000000}
     textUVScale:
       typeIdx: 3
-      value: {x: 6.100000, y: 2.500000}
+      value: {x: 2.500000, y: 2.500000}
   Pass: !<reference> 6e6a49af-98f2-4b1a-9cb3-d79093b3dca5

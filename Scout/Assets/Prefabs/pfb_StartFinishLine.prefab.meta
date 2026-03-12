@@ -86,7 +86,7 @@
   PrefabRemaps:
     []
   Name: Holo_Verical_Line
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -157,7 +157,7 @@
   PrefabRemaps:
     []
   Name: Holo_Projection_Line
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 11.505072, z: 0.000001}
@@ -261,7 +261,7 @@
   PrefabRemaps:
     []
   Name: Holo_Starting_Line_V2 HINT
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -515,7 +515,7 @@
   PrefabRemaps:
     []
   Name: Holo_Starting_Line
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -620,7 +620,7 @@
   PrefabRemaps:
     []
   Name: Text parent
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 11.585992, z: 0.000003}
@@ -672,7 +672,7 @@
   PrefabRemaps:
     []
   Name: Holo_Verical_Line
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -723,7 +723,7 @@
   PrefabRemaps:
     []
   Name: Holo_Starting_Line_V2 REAL
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -985,7 +985,7 @@
   PrefabRemaps:
     []
   Name: Holo_Projection_Line
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 11.505072, z: 0.000001}
@@ -1188,7 +1188,7 @@
   PrefabRemaps:
     []
   Name: Text parent
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 11.585992, z: 0.000003}
@@ -1206,7 +1206,7 @@
   PrefabRemaps:
     []
   Name: Holo_Starting_Line
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}

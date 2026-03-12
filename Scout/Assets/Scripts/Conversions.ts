@@ -32,4 +32,12 @@ export namespace Conversions {
   export function cmPerSecToMPH(paceCmPerSec: number) {
     return (paceCmPerSec * 3600) / (30.48 * 5280)
   }
+
+  /** cm/s → min/mi (returns Infinity if pace is 0, i.e. standing still). */
+  export function cmPerSecToMinPerMile(paceCmPerSec: number): number {
+    if (paceCmPerSec <= 0) return Infinity
+    const mph = cmPerSecToMPH(paceCmPerSec)
+    if (mph <= 0) return Infinity
+    return 60 / mph
+  }
 }
