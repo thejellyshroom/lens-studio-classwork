@@ -54,7 +54,7 @@
       value: 0
     baseColor:
       typeIdx: 5
-      value: {x: 0.156863, y: 0.847059, z: 1.000000, w: 1.000000}
+      value: {x: 0.476844, y: 0.504814, z: 1.000000, w: 1.000000}
     opacityMul:
       typeIdx: 1
       value: 1.000000

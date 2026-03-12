@@ -13,9 +13,9 @@ metaInfo:
     []
   tags:
     []
-  lensName: Path Pioneer
+  lensName: Scout_Project1
   lensDescriptors:
-    []
+    - GEN_AI_ICON
   lensApplicability:
     - Front
     - Back
@@ -24,7 +24,7 @@ metaInfo:
     - Web
     - Spectacles
   platformBundlesEnabled: false
-  iconHash: d3f856d48d565a015f271e4e6ece0bae
+  iconHash: c8b3e3b088af5caf4e73549d08d7f9fd
   videoPreviewHash: ""
   fromTemplateName: Path Pioneer
   fromTemplateUrl: Lens Studio 5.15.3.26011319

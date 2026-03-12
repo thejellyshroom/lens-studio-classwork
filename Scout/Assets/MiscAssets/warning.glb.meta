@@ -1,7 +1,6 @@
 - !<AssetImportMetadata/c2b711be-40ad-496e-899c-5e309dd4cd6b>
   ImportedAssetIds:
     .hidden/bg: !<reference> f7307334-cfc2-4946-842f-b0a9993693cd
-    .hidden/warning: !<reference> d6abec32-393c-4ae2-968e-7eec1448e7ca
     44df3a6f354397e3: !<reference> 07c52e8f-07f3-4fc1-a559-980a60ae4983
     44df3a6f35780072: !<reference> 9c37e6f8-5e91-4415-8d30-577562eccfec
     4a3e924fad0e2f27: !<reference> a000ec70-fc57-4e5f-ac40-4438ee0d05b7

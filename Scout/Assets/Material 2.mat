@@ -78,7 +78,7 @@
       value: 0
     Tweak_N3:
       typeIdx: 5
-      value: {x: 0.299336, y: 1.000000, z: 0.407614, w: 1.000000}
+      value: {x: 0.000000, y: 0.560311, z: 0.000000, w: 1.000000}
     Tweak_N98:
       typeIdx: 9
       value:
