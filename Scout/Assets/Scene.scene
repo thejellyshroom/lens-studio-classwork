@@ -9214,12 +9214,12 @@
   MeshShadowMode: None
   ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
   ShadowDensity: 1.000000
-  Text: "Altitdude: {{Altitude}}"
+  Text: "Altitude: {{Altitude}}"
   Editable: false
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
   SizeToFit: false
-  FontSize: 28
+  FontSize: 40
   Font: !<reference> 00000000-0000-0000-0000-000000000000
   LayoutRect:
     left: -7.500000
@@ -9807,7 +9807,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: -5.000000, y: 0.000000, z: 0.000000}
+    Position: {x: -6.000000, y: 0.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -12721,7 +12721,7 @@
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
   SizeToFit: false
-  FontSize: 28
+  FontSize: 40
   Font: !<reference> 00000000-0000-0000-0000-000000000000
   LayoutRect:
     left: -3.500000
@@ -15024,7 +15024,7 @@
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
   SizeToFit: false
-  FontSize: 28
+  FontSize: 40
   Font: !<reference> 00000000-0000-0000-0000-000000000000
   LayoutRect:
     left: -7.500000
@@ -15750,7 +15750,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 11.000000, y: 0.000000, z: 0.000000}
+    Position: {x: 12.000000, y: 0.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -18539,7 +18539,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 7.000000, y: 0.000000, z: 0.000000}
+    Position: {x: 8.000000, y: 0.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -20722,7 +20722,7 @@
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
   SizeToFit: false
-  FontSize: 28
+  FontSize: 40
   Font: !<reference> 00000000-0000-0000-0000-000000000000
   LayoutRect:
     left: 22.000000
@@ -22220,7 +22220,7 @@
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
   SizeToFit: false
-  FontSize: 28
+  FontSize: 40
   Font: !<reference> 00000000-0000-0000-0000-000000000000
   LayoutRect:
     left: -7.500000
@@ -25141,7 +25141,7 @@
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
   SizeToFit: false
-  FontSize: 28
+  FontSize: 40
   Font: !<reference> 00000000-0000-0000-0000-000000000000
   LayoutRect:
     left: -7.500000
@@ -31270,7 +31270,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: -13.000000, y: 0.000000, z: 0.000000}
+    Position: {x: -14.000000, y: 0.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -32940,7 +32940,7 @@
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
   SizeToFit: false
-  FontSize: 28
+  FontSize: 40
   Font: !<reference> 00000000-0000-0000-0000-000000000000
   LayoutRect:
     left: -7.500000
@@ -35652,7 +35652,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 3.000000, y: 0.000000, z: 0.000000}
+    Position: {x: 4.000000, y: 0.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
