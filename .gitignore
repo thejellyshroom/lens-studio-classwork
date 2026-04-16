@@ -15,6 +15,7 @@ Workspaces/**
 .DS_Store
 *.lock
 *.blend
+*.zip
 
 # Shipped by Lens Studio
 # =========================

@@ -1,0 +1,57 @@
+---
+description: 
+alwaysApply: true
+---
+
+Always reduce every feature to a minimal, working loop of shared spatial state before implementing any additional logic, UI, or polish.
+
+Definition of “working” (must satisfy ALL):
+
+A feature is only considered complete when it:
+
+Creates a SceneObject locally
+Assigns it a valid world or location-anchored position
+Synchronizes its data through Connected Lens (RealtimeStore or messaging)
+Reconstructs the same object correctly on all other clients in the session
+
+If any one of these steps is missing or unreliable, the feature is incomplete and must not be extended.
+
+Execution Constraints
+Always start from Lens Studio primitives
+(SceneObject, Transform, events, Connected Lens state) before building abstractions.
+Always implement local → then sync → then remote reconstruction
+Never skip directly to multiplayer or UI.
+Always validate spatial correctness before adding features
+(object appears in the correct place, for all users, consistently over time)
+Prefer the simplest possible data model
+(e.g., position + minimal metadata only)
+Hard Prohibitions (until core loop works)
+With each implementation, give me instructions on how to hook things up in lens studio
+
+Do NOT implement:
+
+UI systems (menus, overlays, polish)
+Recap / collage generation
+Ghost pins / persistence layers
+Reaction systems
+Complex interaction flows
+
+These are strictly blocked until the shared spatial loop is stable.
+
+Fallback Rule
+
+If a system fails (e.g., Custom Location does not lock or drifts):
+
+Immediately fall back to a simpler approximation (e.g., relative world position or beacon behavior)
+Do NOT block progress on perfect anchoring
+Guiding Principle
+
+The product is a shared spatial state system, not a UI.
+
+Every implementation decision must prioritize:
+
+real-time synchronization
+spatial consistency
+multi-user correctness
+
+over completeness or visual fidelity.
