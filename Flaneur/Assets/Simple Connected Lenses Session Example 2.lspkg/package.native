@@ -1,0 +1,37 @@
+- !<NativePackageDescriptor/374da4e9-6c34-4c73-a012-0a96cdad80dd>
+  PackagePath: ""
+  StudioVersion:
+    major: 5
+    minor: 15
+    patch: 4
+    build: 26022322
+    type: Unset
+    buildFlavor: ""
+    timestamp: 0
+    commit: ""
+  Description: "Connected Lenses Multiplayer Session Example Create a multiplayer AR experience by using the Connected Lenses Module to invite multiple users into one session. This asset provides an example script that you can modify directly, or use as an API. This works great with Realtime Store and Persistent Cloud Storage APIs. Click here to learn more on how to use Connected Lenses"
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  UpdateCheckpoint: 76
+  ExportUid: 9f4ef632-73c2-46f1-aefc-d0313f522c39
+  ComponentUid: 14a932fa-5c55-419a-b64a-0cdd2627afba
+  PackagePolicy: CanBeUnpackedTransparent
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  Instantiable: !<reference> 00000000-0000-0000-0000-000000000000
+  AssetLibraryDependencyStructure: !<AssetLibraryDependencyStructure>
+    Name: ""
+    AssetId: ""
+    Hash: ""
+    Version:
+      major: 0
+      minor: 0
+      patch: 0
+      build: 0
