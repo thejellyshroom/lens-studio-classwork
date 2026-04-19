@@ -26,6 +26,17 @@
  *   under Orthographic Camera, or a large quad in world). That surface receives Preview clicks.
  * - Or double-tap in the Preview panel (DoubleTapEvent).
  *
+ * WITH SIK / ON-SCREEN UI + PIN DROP:
+ * - **Spawn Object at World Mesh On Tap**: keep **Pin Drop From Global Screen Events OFF**; that script handles **TapEvent**
+ *   and calls `flaneurPinIsScreenOverBlockerUi` then `flaneurCommitPinAtWorldPosition` when **Skip Instantiate When Flaneur Pins**
+ *   is ON. Pins still use **Pin Template**.
+ * - **SIK RoundButton:** leave **Pin Drop Listen Trigger Primary OFF** (default). If ON, this script also handles
+ *   **TriggerPrimaryEvent** and competes with SIK for the same input—buttons often stop receiving hits.
+ * - **Pin Drop UI Blocker Root Extra** = your **UI** parent (Toast / Next / Sidebar). Uses **ScreenTransform** hits plus
+ *   **world mesh/text/collider** positions projected to screen (**Pin Drop World UI Block Screen Radius**) for head-anchored SIK.
+ * - Optional **Pin Drop From Global Screen Events** for legacy depth drops on this script. **Pin Drop UI Blocker Root** = SIK canvas if needed.
+ * - "Editor Touch Blocking For Preview" stays OFF by default (touchBlocking blocks UI in Preview).
+ *
  * TEST: Host opens lens → shares session → join from second device → tap to drop pins; both should see updates.
  *
  * PIN PHOTOS (Spectacles): Uses `require("LensStudio:CameraModule")` and still-image `requestImage` — no Camera Module
@@ -42,6 +53,13 @@
 // @input Component.InteractionComponent pinDropInteraction
 // @input bool logPinInputDebug = false
 // @input bool capturePinPhotos = true
+// @input bool pinDropFromGlobalScreenEvents = false
+// @input bool editorTouchBlockingForPreview = false
+// @input SceneObject pinDropUiBlockerRoot
+// @input SceneObject pinDropUiBlockerRootExtra
+// @input bool pinDropListenTriggerPrimary = false
+// @input bool pinDropUseWorldUiProjectionBlock = true
+// @input float pinDropWorldUiBlockScreenRadius = 0.11
 
 var FLANEUR_STORE_ID = "flaneur_pins_v1";
 var PIN_KEY_PREFIX = "pin:";
@@ -68,6 +86,139 @@ var syncKitSc = null;
 var syncKitWired = false;
 var standaloneWired = false;
 var syncKitSpinEvent = null;
+var pinDropUiBlockerRects = [];
+var pinDropUiBlockerWorldPoints = [];
+var pinDropUiBlockerWarned = false;
+
+function collectScreenTransformsUnder(so, outList) {
+  if (!so || isNull(so)) {
+    return;
+  }
+  var st = so.getComponent("Component.ScreenTransform");
+  if (st && !isNull(st)) {
+    outList.push(st);
+  }
+  var n = so.getChildrenCount();
+  for (var i = 0; i < n; i++) {
+    collectScreenTransformsUnder(so.getChild(i), outList);
+  }
+}
+
+function refreshPinDropUiBlockers() {
+  pinDropUiBlockerRects = [];
+  pinDropUiBlockerWorldPoints = [];
+  if (script.pinDropUiBlockerRoot && !isNull(script.pinDropUiBlockerRoot)) {
+    collectScreenTransformsUnder(script.pinDropUiBlockerRoot, pinDropUiBlockerRects);
+    collectWorldPositionsUnderBlockerForUiTap(script.pinDropUiBlockerRoot, pinDropUiBlockerWorldPoints, 0);
+  }
+  if (script.pinDropUiBlockerRootExtra && !isNull(script.pinDropUiBlockerRootExtra)) {
+    collectScreenTransformsUnder(script.pinDropUiBlockerRootExtra, pinDropUiBlockerRects);
+    collectWorldPositionsUnderBlockerForUiTap(script.pinDropUiBlockerRootExtra, pinDropUiBlockerWorldPoints, 0);
+  }
+}
+
+function shouldSampleWorldPositionForUiBlock(so) {
+  if (!so || isNull(so)) {
+    return false;
+  }
+  try {
+    if (so.getComponent("Component.RenderMeshVisual")) {
+      return true;
+    }
+  } catch (e0) {}
+  try {
+    if (so.getComponent("Component.Text")) {
+      return true;
+    }
+  } catch (e1) {}
+  try {
+    if (so.getComponent("Physics.ColliderComponent")) {
+      return true;
+    }
+  } catch (e2) {}
+  try {
+    if (so.getComponent("Component.ColliderComponent")) {
+      return true;
+    }
+  } catch (e2b) {}
+  return false;
+}
+
+function collectWorldPositionsUnderBlockerForUiTap(so, outPts, depth) {
+  if (!so || isNull(so) || depth > 64) {
+    return;
+  }
+  if (!so.enabled) {
+    return;
+  }
+  if (shouldSampleWorldPositionForUiBlock(so)) {
+    try {
+      outPts.push(so.getTransform().getWorldPosition());
+    } catch (e3) {}
+  }
+  var n = so.getChildrenCount();
+  for (var i = 0; i < n; i++) {
+    collectWorldPositionsUnderBlockerForUiTap(so.getChild(i), outPts, depth + 1);
+  }
+}
+
+function isTapNearWorldUiProjectionBlocker(cam, screenNorm) {
+  if (
+    script.pinDropUseWorldUiProjectionBlock === false ||
+    !cam ||
+    isNull(cam) ||
+    !screenNorm ||
+    !pinDropUiBlockerWorldPoints ||
+    pinDropUiBlockerWorldPoints.length === 0
+  ) {
+    return false;
+  }
+  var rad = script.pinDropWorldUiBlockScreenRadius > 0.02 ? script.pinDropWorldUiBlockScreenRadius : 0.11;
+  var rad2 = rad * rad;
+  var snx = screenNorm.x;
+  var sny = screenNorm.y;
+  var j;
+  for (j = 0; j < pinDropUiBlockerWorldPoints.length; j++) {
+    var wp = pinDropUiBlockerWorldPoints[j];
+    if (!wp) {
+      continue;
+    }
+    try {
+      var sp = cam.worldSpaceToScreenSpace(wp);
+      if (sp.x < -0.25 || sp.x > 1.25 || sp.y < -0.25 || sp.y > 1.25) {
+        continue;
+      }
+      var dx = sp.x - snx;
+      var dy = sp.y - sny;
+      if (dx * dx + dy * dy <= rad2) {
+        return true;
+      }
+    } catch (e4) {}
+  }
+  return false;
+}
+
+function isTapOverPinDropUiBlocker(screenNorm) {
+  if (!screenNorm) {
+    return false;
+  }
+  for (var i = 0; i < pinDropUiBlockerRects.length; i++) {
+    var st = pinDropUiBlockerRects[i];
+    if (!st || isNull(st)) {
+      continue;
+    }
+    try {
+      if (st.containsScreenPoint(screenNorm)) {
+        return true;
+      }
+    } catch (e) {}
+  }
+  var camW = getWorldCamera();
+  if (camW && !isNull(camW) && isTapNearWorldUiProjectionBlocker(camW, screenNorm)) {
+    return true;
+  }
+  return false;
+}
 
 function getSessionController() {
   try {
@@ -336,7 +487,13 @@ function publishGlobalApi() {
       getLocalDisplayName: function () {
         return localDisplayName;
       },
+      isScreenOverBlockerUi: function (n) {
+        refreshPinDropUiBlockers();
+        return isTapOverPinDropUiBlocker(n);
+      },
+      commitPinAtWorldPosition: commitPinAtWorldPosition,
     };
+    publishPinDropGlobals();
   } catch (e) {}
 }
 
@@ -619,8 +776,8 @@ function capturePinPhotoAsync(pinId) {
 var lastPinWallTime = -999;
 
 /**
- * Normalized screen pos (0–1). TapEvent / TouchStart work on phone; Spectacles Preview often
- * only delivers TouchStartEvent or TriggerPrimaryEvent, not TapEvent.
+ * Normalized screen pos (0–1). TapEvent / DoubleTapEvent; TouchStartEvent for devices that omit TapEvent.
+ * TouchEndEvent is not used for pin drop (avoids a second placement when lifting off UI).
  */
 function dbgPin(msg) {
   if (script.logPinInputDebug) {
@@ -628,11 +785,62 @@ function dbgPin(msg) {
   }
 }
 
+function commitPinAtWorldPosition(worldVec3) {
+  if (!worldVec3) {
+    return;
+  }
+  if (!flaneurStore) {
+    dbgPin("flaneurCommitPinAtWorldPosition: no RealtimeStore.");
+    return;
+  }
+  var t = getTime();
+  if (t - lastPinWallTime < 0.25) {
+    return;
+  }
+  lastPinWallTime = t;
+  var stored = worldPointToStoredVec3(worldVec3);
+  var rec = {
+    id: makePinId(),
+    oid: localUserId || "local",
+    name: localDisplayName || localUserId || "Player",
+    img: "",
+    x: stored.x,
+    y: stored.y,
+    z: stored.z,
+    t: t,
+  };
+  upsertPinInStore(rec);
+  upsertMarkerScene(rec);
+  dbgPin("Committed pin " + rec.id);
+  try {
+    if (typeof global !== "undefined" && global.flaneurPinShowToast) {
+      global.flaneurPinShowToast((localDisplayName || "You") + " dropped a pin!");
+    }
+  } catch (e) {}
+  capturePinPhotoAsync(rec.id);
+}
+
+function publishPinDropGlobals() {
+  try {
+    if (typeof global === "undefined") {
+      return;
+    }
+    global.flaneurPinIsScreenOverBlockerUi = function (screenNorm) {
+      refreshPinDropUiBlockers();
+      return isTapOverPinDropUiBlocker(screenNorm);
+    };
+    global.flaneurCommitPinAtWorldPosition = commitPinAtWorldPosition;
+  } catch (ePub) {}
+}
+
 function tryEnableEditorTouchForLens() {
+  if (script.editorTouchBlockingForPreview !== true) {
+    return;
+  }
   try {
     if (global.deviceInfoSystem.isEditor()) {
       global.touchSystem.touchBlocking = true;
-      dbgPin("Set touchSystem.touchBlocking = true (helps Preview deliver touches to the lens).");
+      dbgPin("Set touchSystem.touchBlocking = true (Preview only; can block SIK UI—disable if UI stops receiving taps).");
     }
   } catch (e) {
     dbgPin("touchBlocking not set: " + e);
@@ -664,11 +872,22 @@ function tryDropPinAtNormalizedScreen(screenNorm) {
     }
     return;
   }
-  var t = getTime();
-  if (t - lastPinWallTime < 0.25) {
+  refreshPinDropUiBlockers();
+  if (isTapOverPinDropUiBlocker(screenNorm)) {
+    dbgPin("Skipped pin drop (tap on UI under Pin Drop UI Blocker Root).");
     return;
   }
-  lastPinWallTime = t;
+  if (
+    script.pinDropFromGlobalScreenEvents === true &&
+    (!script.pinDropUiBlockerRoot || isNull(script.pinDropUiBlockerRoot)) &&
+    (!script.pinDropUiBlockerRootExtra || isNull(script.pinDropUiBlockerRootExtra)) &&
+    !pinDropUiBlockerWarned
+  ) {
+    pinDropUiBlockerWarned = true;
+    print(
+      "[Flaneur] Pin Drop From Global Screen Events is ON but Pin Drop UI Blocker Root (and Extra) are empty—assign SIK screen root and/or head UI root so buttons are not treated as pin drops."
+    );
+  }
 
   var cam = getWorldCamera();
   if (!cam) {
@@ -681,64 +900,57 @@ function tryDropPinAtNormalizedScreen(screenNorm) {
   }
   var depth = script.placementDepth > 0 ? script.placementDepth : 200;
   var world = cam.screenSpaceToWorldSpace(sn, depth);
-  var stored = worldPointToStoredVec3(world);
-  var rec = {
-    id: makePinId(),
-    oid: localUserId || "local",
-    name: localDisplayName || localUserId || "Player",
-    img: "",
-    x: stored.x,
-    y: stored.y,
-    z: stored.z,
-    t: t,
-  };
-  upsertPinInStore(rec);
-  upsertMarkerScene(rec);
-  dbgPin("Committed pin " + rec.id);
-  try {
-    if (typeof global !== "undefined" && global.flaneurPinShowToast) {
-      global.flaneurPinShowToast((localDisplayName || "You") + " dropped a pin!");
-    }
-  } catch (e) {}
-  capturePinPhotoAsync(rec.id);
+  commitPinAtWorldPosition(world);
 }
 
-script.createEvent("TapEvent").bind(function (ev) {
-  dbgPin("TapEvent");
-  tryDropPinAtNormalizedScreen(ev.getTapPosition());
-});
-
-script.createEvent("TouchStartEvent").bind(function (ev) {
-  dbgPin("TouchStartEvent");
-  tryDropPinAtNormalizedScreen(ev.getTouchPosition());
-});
-
-script.createEvent("TouchEndEvent").bind(function (ev) {
-  dbgPin("TouchEndEvent");
-  tryDropPinAtNormalizedScreen(ev.getTouchPosition());
-});
-
-script.createEvent("DoubleTapEvent").bind(function (ev) {
-  dbgPin("DoubleTapEvent");
-  tryDropPinAtNormalizedScreen(ev.getTapPosition());
-});
-
-script.createEvent("TriggerPrimaryEvent").bind(function (ev) {
-  dbgPin("TriggerPrimaryEvent");
-  var p = ev.position;
-  if (!p || (p.x === 0 && p.y === 0)) {
-    p = new vec2(0.5, 0.5);
+function bindGlobalScreenPinEventsIfEnabled() {
+  if (script.pinDropFromGlobalScreenEvents !== true) {
+    print(
+      "[Flaneur] Pin drops: Interaction + TriggerPrimary; global Tap off (use Spawn Object at World Mesh On Tap + flaneur globals for mesh hits)."
+    );
+    return;
   }
-  tryDropPinAtNormalizedScreen(p);
-});
+  script.createEvent("TapEvent").bind(function (ev) {
+    dbgPin("TapEvent");
+    tryDropPinAtNormalizedScreen(ev.getTapPosition());
+  });
+  script.createEvent("TouchStartEvent").bind(function (ev) {
+    dbgPin("TouchStartEvent");
+    tryDropPinAtNormalizedScreen(ev.getTouchPosition());
+  });
+  script.createEvent("DoubleTapEvent").bind(function (ev) {
+    dbgPin("DoubleTapEvent");
+    tryDropPinAtNormalizedScreen(ev.getTapPosition());
+  });
+  print(
+    "[Flaneur] Global screen pin events ON (depth placement). Prefer OFF when using Spawn Object at World Mesh On Tap."
+  );
+}
+
+bindGlobalScreenPinEventsIfEnabled();
+
+if (script.pinDropListenTriggerPrimary === true) {
+  script.createEvent("TriggerPrimaryEvent").bind(function (ev) {
+    dbgPin("TriggerPrimaryEvent");
+    var p = ev.position;
+    if (!p || (p.x === 0 && p.y === 0)) {
+      p = new vec2(0.5, 0.5);
+    }
+    tryDropPinAtNormalizedScreen(p);
+  });
+}
 
 script.createEvent("TurnOnEvent").bind(function () {
+  refreshPinDropUiBlockers();
+  publishPinDropGlobals();
   tryEnableEditorTouchForLens();
   wirePinDropInteractionComponent();
   tryWireMultiplayerBackend();
   print(
-    "[Flaneur] Pin input: tap / touch / double-tap / trigger, or assign Pin Drop Interaction for Spectacles Preview. Enable Log Pin Input Debug to trace. Session store must exist first."
+    "[Flaneur] Pin bridge: Spawn Object at World Mesh On Tap → flaneurPinIsScreenOverBlockerUi / flaneurCommitPinAtWorldPosition. TriggerPrimary pin drop is OFF by default (SIK). Tune Pin Drop World UI Block Screen Radius for head UI."
   );
 });
 
 script.shareSession = shareSession;
+
+publishPinDropGlobals();

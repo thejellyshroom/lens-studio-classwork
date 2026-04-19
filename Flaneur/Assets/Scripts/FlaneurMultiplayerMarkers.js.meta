@@ -29,9 +29,16 @@
     autoShareOnSoloConnect: false
     capturePinPhotos: false
     connectedLensModule: false
+    editorTouchBlockingForPreview: false
     logPinInputDebug: false
     markersRoot: false
+    pinDropFromGlobalScreenEvents: false
     pinDropInteraction: false
+    pinDropListenTriggerPrimary: false
+    pinDropUiBlockerRoot: false
+    pinDropUiBlockerRootExtra: false
+    pinDropUseWorldUiProjectionBlock: false
+    pinDropWorldUiBlockScreenRadius: false
     pinTemplate: false
     placementDepth: false
     useSpectaclesSyncKit: false
@@ -55,6 +62,13 @@
       pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
       logPinInputDebug: false
       capturePinPhotos: true
+      pinDropFromGlobalScreenEvents: false
+      editorTouchBlockingForPreview: false
+      pinDropUiBlockerRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinDropUiBlockerRootExtra: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinDropListenTriggerPrimary: false
+      pinDropUseWorldUiProjectionBlock: true
+      pinDropWorldUiBlockScreenRadius: 0.110000
   ScriptTypes:
     -
       {}

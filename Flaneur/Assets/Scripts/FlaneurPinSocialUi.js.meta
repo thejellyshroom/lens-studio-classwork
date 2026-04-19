@@ -26,17 +26,23 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    followLateralSpeedRef: false
+    followYawDegPerSecRef: false
+    headFollowUiRoot: false
     pinEntryPrefab: false
     sidebarCountBadge: false
     sidebarFab: false
     sidebarListRoot: false
     sidebarPanel: false
+    sidebarToggleInteraction: false
     toastAnchor: false
     toastFadeSeconds: false
+    toastFollowSmoothTime: false
     toastHoldSeconds: false
     toastLocalX: false
     toastLocalY: false
     toastLocalZ: false
+    toastStraightFollowSmoothTime: false
     toastText: false
     worldCamera: false
   ScriptTypesHidden:
@@ -50,12 +56,18 @@
   DefaultScriptInputs:
     - worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       toastAnchor: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      headFollowUiRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       toastText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       toastLocalX: !<float> 0.000000
       toastLocalY: !<float> 12.000000
       toastLocalZ: !<float> -48.000000
+      toastFollowSmoothTime: 0.220000
+      toastStraightFollowSmoothTime: 0.035000
+      followLateralSpeedRef: 0.140000
+      followYawDegPerSecRef: !<float> 38.000000
       toastHoldSeconds: 2.500000
       toastFadeSeconds: 0.850000
+      sidebarToggleInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
       sidebarFab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       sidebarCountBadge: !<reference.Text> 00000000-0000-0000-0000-000000000000
       sidebarPanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000

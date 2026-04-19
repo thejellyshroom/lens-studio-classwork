@@ -2,33 +2,45 @@
  * Flâneur — Pin social UI: head-anchored toast, collapsible pin list, Spectacles photo previews, reactions.
  *
  * SETUP (add this ScriptComponent next to FlaneurMultiplayerMarkers):
- * 1) World toast — Create SceneObject parented under the SAME world/Device camera as AR (child of camera object).
- *    Assign it to "Toast Anchor". Add Component.Text (world-space size ~6–12 units). Assign to "Toast Text".
- *    The anchor follows the camera each frame using Toast Local Offset (cm-scale: e.g. Y=12, Z=-45).
- * 2) Sidebar — Under your orthographic / screen UI root: FAB SceneObject with InteractionComponent + collider,
- *    circular mesh or image. Assign to "Sidebar Fab".
- * 3) Badge — Small Text object (top-right of FAB in local layout). Assign to "Sidebar Count Badge".
- * 4) Panel — Container with ScreenTransform for expanded list. Assign to "Sidebar Panel". Start disabled.
- * 5) List root — Empty child under panel; rows are parented here. Assign "Sidebar List Root".
- * 6) Row prefab — One row SceneObject (disabled in hierarchy) with children named:
- *    - "PinPhoto" : Component.Image (optional)
- *    - "PinName" : Component.Text
- *    - "PinReacts" : Component.Text (summary)
- *    - "React0", "React1", "React2" : each has InteractionComponent (👍 / ? / ✨)
- *    Assign to "Pin Entry Prefab".
- * 7) Assign "World Camera" (same AR camera as markers).
+ * 1) Head-follow UI — Prefer one **Head Follow UI Root** empty (toast + Next + sidebar parented under it, NOT under the
+ *    camera). The script moves that root toward a camera-local offset each frame. If "Head Follow UI Root" is unset,
+ *    it falls back to moving **Toast Anchor** only (legacy). **Toast Text** still lives on the toast object you enable
+ *    for messages. Follow uses **fast** response when you move straight (horizontal forward) and **slower** smoothing
+ *    for strafe and yaw so lateral motion and turns feel softer. On **FlaneurMultiplayerMarkers**, set **Pin Drop UI Blocker
+ *    Root Extra** to your **UI** object (parent of Toast / Next / Sidebar) so **Spawn Object at World Mesh On Tap** skips
+ *    mesh hits when tapping that UI (`flaneurPinIsScreenOverBlockerUi`). On **FlaneurMultiplayerMarkers** leave **Pin Drop
+ *    Listen Trigger Primary** OFF so SIK RoundButton keeps primary input; increase **Pin Drop World UI Block Screen Radius**
+ *    slightly if taps near Next still place pins.
+ * 2) Sidebar toggle — Pick ONE:
+ *    A) Spectacles UI **RoundButton** (Next, etc.): enable **addCallbacks** on the button. Add an entry under
+ *       **onValueChangeCallbacks** → target this **FlaneurPinSocialUi** script → **`flaneurSidebarSetOpen`**
+ *       (passes toggle on/off; mirrors panel to button). OR use **triggerUpCallbacks** → **`flaneurToggleSidebar`**
+ *       (one flip per finger-up, ignores stored toggle value).
+ *    B) Raw **InteractionComponent**: assign "Sidebar Toggle Interaction", OR "Sidebar Fab" with IC on root.
+ * 3) Badge — Small Text (pin count). Assign to "Sidebar Count Badge".
+ * 4) Panel — SIK / UI Starter vertical layout container for the list. Assign "Sidebar Panel". Start disabled.
+ * 5) List root — Empty child under the panel where cloned rows parent. Assign "Sidebar List Root".
+ * 6) Row prefab — Disabled template with children: PinPhoto (Image), PinName (Text), PinReacts (Text),
+ *    React0 / React1 / React2 (each with InteractionComponent).
+ * 7) "World Camera" = same AR camera as FlaneurMultiplayerMarkers.
  *
  * Reactions sync via RealtimeStore keys: react:<pinId>:<yourUserId> → "0" | "1" | "2".
  */
 
 // @input Component.Camera worldCamera
 // @input SceneObject toastAnchor
+// @input SceneObject headFollowUiRoot
 // @input Component.Text toastText
 // @input float toastLocalX = 0
 // @input float toastLocalY = 12
 // @input float toastLocalZ = -48
+// @input float toastFollowSmoothTime = 0.22
+// @input float toastStraightFollowSmoothTime = 0.035
+// @input float followLateralSpeedRef = 0.14
+// @input float followYawDegPerSecRef = 38
 // @input float toastHoldSeconds = 2.5
 // @input float toastFadeSeconds = 0.85
+// @input Component.InteractionComponent sidebarToggleInteraction
 // @input SceneObject sidebarFab
 // @input Component.Text sidebarCountBadge
 // @input SceneObject sidebarPanel
@@ -42,6 +54,34 @@ var seenPinsSeeded = false;
 var toastHoldUntil = -1;
 var toastFading = false;
 var toastFadeT = 0;
+
+var followPrevCamPos = null;
+var followPrevCamFwdH = null;
+var followHasPrev = false;
+
+function clamp01(x) {
+  if (x < 0) {
+    return 0;
+  }
+  if (x > 1) {
+    return 1;
+  }
+  return x;
+}
+
+function vec3Len(v) {
+  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+function getFollowRoot() {
+  if (script.headFollowUiRoot && !isNull(script.headFollowUiRoot)) {
+    return script.headFollowUiRoot;
+  }
+  if (script.toastAnchor && !isNull(script.toastAnchor)) {
+    return script.toastAnchor;
+  }
+  return null;
+}
 
 function trySeedExistingPins() {
   if (seenPinsSeeded) {
@@ -114,16 +154,94 @@ function showToast(msg) {
   toastFadeT = script.toastFadeSeconds > 0 ? script.toastFadeSeconds : 0.85;
 }
 
+function expSmoothFactor(dt, smoothTime) {
+  var st = smoothTime > 0.01 ? smoothTime : 0.18;
+  return 1 - Math.exp(-dt / st);
+}
+
 function updateToastFollowAndFade(dt) {
   if (!script.worldCamera || isNull(script.worldCamera)) {
     return;
   }
-  if (script.toastAnchor && !isNull(script.toastAnchor)) {
+  var followRoot = getFollowRoot();
+  if (followRoot && !isNull(followRoot)) {
     var camTr = script.worldCamera.getSceneObject().getTransform();
+    var camWorld = camTr.getWorldTransform();
+    var camPos = camWorld.multiplyPoint(new vec3(0, 0, 0));
     var lp = new vec3(script.toastLocalX, script.toastLocalY, script.toastLocalZ);
-    var worldP = camTr.getWorldTransform().multiplyPoint(lp);
-    script.toastAnchor.getTransform().setWorldPosition(worldP);
-    script.toastAnchor.getTransform().setWorldRotation(camTr.getWorldRotation());
+    var targetP = camWorld.multiplyPoint(lp);
+    var targetR = camTr.getWorldRotation();
+    var fwdWorld = camWorld.multiplyDirection(new vec3(0, 0, -1));
+    var fx = fwdWorld.x;
+    var fz = fwdWorld.z;
+    var fhLen = Math.sqrt(fx * fx + fz * fz);
+    var fwdH;
+    if (fhLen > 1e-4) {
+      fwdH = new vec3(fx / fhLen, 0, fz / fhLen);
+    } else {
+      fwdH = new vec3(0, 0, -1);
+    }
+    var lateralSpeed = 0;
+    var yawDegPerSec = 0;
+    var epsDt = dt > 1e-5 ? dt : 1 / 60;
+    if (followHasPrev && followPrevCamPos && followPrevCamFwdH) {
+      var dx = camPos.x - followPrevCamPos.x;
+      var dy = camPos.y - followPrevCamPos.y;
+      var dz = camPos.z - followPrevCamPos.z;
+      var par = dx * fwdH.x + dy * fwdH.y + dz * fwdH.z;
+      var lx = dx - fwdH.x * par;
+      var ly = dy - fwdH.y * par;
+      var lz = dz - fwdH.z * par;
+      lateralSpeed = Math.sqrt(lx * lx + ly * ly + lz * lz) / epsDt;
+      var dotFH =
+        followPrevCamFwdH.x * fwdH.x + followPrevCamFwdH.y * fwdH.y + followPrevCamFwdH.z * fwdH.z;
+      if (dotFH > 1) {
+        dotFH = 1;
+      }
+      if (dotFH < -1) {
+        dotFH = -1;
+      }
+      var crossY =
+        followPrevCamFwdH.x * fwdH.z - followPrevCamFwdH.z * fwdH.x;
+      var yawRad = Math.atan2(crossY, dotFH);
+      yawDegPerSec = (Math.abs(yawRad) / epsDt) * (180 / Math.PI);
+    }
+    var refLat = script.followLateralSpeedRef > 1e-4 ? script.followLateralSpeedRef : 0.14;
+    var refYaw = script.followYawDegPerSecRef > 1e-2 ? script.followYawDegPerSecRef : 38;
+    var blendLat = clamp01(lateralSpeed / refLat);
+    var blendRot = clamp01(yawDegPerSec / refYaw);
+    var tauStraight =
+      script.toastStraightFollowSmoothTime > 1e-4 ? script.toastStraightFollowSmoothTime : 0.035;
+    var tauLateral = script.toastFollowSmoothTime > 0.01 ? script.toastFollowSmoothTime : 0.22;
+    var kFast = expSmoothFactor(dt, tauStraight);
+    var kSlow = expSmoothFactor(dt, tauLateral);
+    var kFwd = kFast;
+    var kLatBlend = kFast + (kSlow - kFast) * blendLat;
+    var kRotBlend = kFast + (kSlow - kFast) * blendRot;
+    var tr = followRoot.getTransform();
+    var curP = tr.getWorldPosition();
+    var ex = targetP.x - curP.x;
+    var ey = targetP.y - curP.y;
+    var ez = targetP.z - curP.z;
+    var ePar = ex * fwdH.x + ey * fwdH.y + ez * fwdH.z;
+    var eFwdX = fwdH.x * ePar;
+    var eFwdY = fwdH.y * ePar;
+    var eFwdZ = fwdH.z * ePar;
+    var eLatX = ex - eFwdX;
+    var eLatY = ey - eFwdY;
+    var eLatZ = ez - eFwdZ;
+    var newP = new vec3(
+      curP.x + eFwdX * kFwd + eLatX * kLatBlend,
+      curP.y + eFwdY * kFwd + eLatY * kLatBlend,
+      curP.z + eFwdZ * kFwd + eLatZ * kLatBlend
+    );
+    tr.setWorldPosition(newP);
+    var curR = tr.getWorldRotation();
+    var newR = quat.slerp(curR, targetR, kRotBlend);
+    tr.setWorldRotation(newR);
+    followPrevCamPos = new vec3(camPos.x, camPos.y, camPos.z);
+    followPrevCamFwdH = new vec3(fwdH.x, fwdH.y, fwdH.z);
+    followHasPrev = true;
   }
   if (!script.toastText || isNull(script.toastText)) {
     return;
@@ -360,25 +478,74 @@ function onStoreKeyUpdated(key) {
   updatePinCountBadge();
 }
 
-function wireFab() {
-  if (!script.sidebarFab || isNull(script.sidebarFab)) {
-    print("[Flaneur][UI] Assign Sidebar Fab (with InteractionComponent).");
-    return;
+function applySidebarOpenState(isOpen) {
+  sidebarOpen = !!isOpen;
+  if (script.sidebarPanel && !isNull(script.sidebarPanel)) {
+    script.sidebarPanel.enabled = sidebarOpen;
   }
-  var ic = script.sidebarFab.getComponent("InteractionComponent");
-  if (!ic) {
-    print("[Flaneur][UI] Sidebar Fab needs InteractionComponent.");
-    return;
+  if (sidebarOpen) {
+    rebuildPinList();
   }
-  ic.onTap.add(function () {
-    sidebarOpen = !sidebarOpen;
-    if (script.sidebarPanel && !isNull(script.sidebarPanel)) {
-      script.sidebarPanel.enabled = sidebarOpen;
+  updatePinCountBadge();
+}
+
+function toggleSidebarPanel() {
+  applySidebarOpenState(!sidebarOpen);
+}
+
+function exposeSidebarMethodsForRoundButtonCallbacks() {
+  script.flaneurToggleSidebar = function () {
+    toggleSidebarPanel();
+  };
+  script.flaneurSidebarSetOpen = function (value) {
+    if (arguments.length === 0) {
+      toggleSidebarPanel();
+      return;
     }
-    if (sidebarOpen) {
-      rebuildPinList();
+    var on;
+    if (value === true || value === 1 || value === "1" || value === "true") {
+      on = true;
+    } else if (value === false || value === 0 || value === "0" || value === "false") {
+      on = false;
+    } else {
+      on = !!value;
     }
-  });
+    applySidebarOpenState(on);
+  };
+  try {
+    global.flaneurTogglePinSidebar = function () {
+      toggleSidebarPanel();
+    };
+    global.flaneurPinSidebarSetOpen = function (v) {
+      script.flaneurSidebarSetOpen(v);
+    };
+  } catch (e) {}
+}
+
+function wireSidebarToggle() {
+  var wired = false;
+  if (script.sidebarToggleInteraction && !isNull(script.sidebarToggleInteraction)) {
+    script.sidebarToggleInteraction.onTap.add(function () {
+      toggleSidebarPanel();
+    });
+    print("[Flaneur][UI] Sidebar: wired to Sidebar Toggle Interaction (onTap).");
+    wired = true;
+  }
+  if (!wired && script.sidebarFab && !isNull(script.sidebarFab)) {
+    var ic = script.sidebarFab.getComponent("InteractionComponent");
+    if (ic) {
+      ic.onTap.add(function () {
+        toggleSidebarPanel();
+      });
+      print("[Flaneur][UI] Sidebar: wired to Sidebar Fab InteractionComponent.");
+      wired = true;
+    }
+  }
+  if (!wired) {
+    print(
+      "[Flaneur][UI] Sidebar: use Spectacles RoundButton addCallbacks → onValueChangeCallbacks → this script.flaneurSidebarSetOpen, or triggerUpCallbacks → flaneurToggleSidebar."
+    );
+  }
 }
 
 script.createEvent("UpdateEvent").bind(function (ev) {
@@ -397,6 +564,7 @@ script.createEvent("TurnOnEvent").bind(function () {
     global.flaneurPinShowToast = showToast;
     global.flaneurPinStoreKeyUpdated = onStoreKeyUpdated;
   } catch (e) {}
+  exposeSidebarMethodsForRoundButtonCallbacks();
   sidebarOpen = false;
   if (script.sidebarPanel && !isNull(script.sidebarPanel)) {
     script.sidebarPanel.enabled = false;
@@ -404,7 +572,9 @@ script.createEvent("TurnOnEvent").bind(function () {
   if (script.toastAnchor && !isNull(script.toastAnchor)) {
     script.toastAnchor.enabled = false;
   }
-  wireFab();
+  wireSidebarToggle();
   updatePinCountBadge();
-  print("[Flaneur][UI] Social UI on. Wire toast anchor + sidebar per script header.");
+  print(
+    "[Flaneur][UI] Social UI on. RoundButton → flaneurSidebarSetOpen / flaneurToggleSidebar; head UI uses smooth follow (fast straight / soft strafe+yaw). Assign Head Follow UI Root for toast+Next+sidebar."
+  );
 });
