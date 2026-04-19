@@ -27,10 +27,14 @@
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
     autoShareOnSoloConnect: false
+    capturePinPhotos: false
     connectedLensModule: false
+    logPinInputDebug: false
     markersRoot: false
+    pinDropInteraction: false
     pinTemplate: false
     placementDepth: false
+    useSpectaclesSyncKit: false
     worldCamera: false
   ScriptTypesHidden:
     {}
@@ -47,6 +51,10 @@
       worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       placementDepth: !<float> 200.000000
       autoShareOnSoloConnect: true
+      useSpectaclesSyncKit: true
+      pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
+      logPinInputDebug: false
+      capturePinPhotos: true
   ScriptTypes:
     -
       {}

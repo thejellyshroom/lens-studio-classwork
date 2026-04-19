@@ -7,8 +7,10 @@
     - !<own> 5a034696-f438-4bb9-b409-ae915b714cfa
     - !<own> 6f0186ef-2c1a-44f1-b375-5ee24fbd0b3e
     - !<own> cd55e598-e593-4dfd-80d3-70d7fe043804
+    - !<own> 796615d9-baa7-427f-b768-6c1878aedfda
     - !<own> 66d9bf23-daa3-4a5e-a7c7-e2f1df8f3a2a
     - !<own> b4ad0623-8544-42f1-a43d-e748d2324b6c
+    - !<own> f7bd3c3c-5235-41eb-bb00-89fb7eee6f07
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       - |
@@ -33,7 +35,7 @@
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
   Children:
-    []
+    - !<own> c993e9a5-7d90-4ec2-87f6-c1f632250707
   Components:
     - !<own> 00000000-0000-0065-0000-000000000065
     - !<own> 9dda2952-4001-491b-84ba-366e9d4db33f
@@ -352,6 +354,45 @@
     []
   Components:
     []
+- !<ScriptComponent/012fe1fd-bda4-480f-b874-ec5685d6b83c>
+  PrefabRemaps:
+    []
+  Name: FlaneurPinSocialUi
+  Enabled: true
+  ScriptAsset: !<reference> 743ff105-d38b-406e-b960-9a2fdaa60a40
+  ScriptInputsDefault:
+    toastAnchor: true
+    toastText: true
+    toastLocalX: true
+    toastLocalY: true
+    toastLocalZ: true
+    toastHoldSeconds: true
+    toastFadeSeconds: true
+    sidebarFab: true
+    sidebarCountBadge: true
+    sidebarPanel: true
+    sidebarListRoot: true
+    pinEntryPrefab: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
+      toastAnchor: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      toastText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      toastLocalX: !<float> 0.000000
+      toastLocalY: !<float> 12.000000
+      toastLocalZ: !<float> -48.000000
+      toastHoldSeconds: 2.500000
+      toastFadeSeconds: 0.850000
+      sidebarFab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarCountBadge: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      sidebarPanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarListRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinEntryPrefab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/01b1d992-99e3-4805-93e0-57e150e2a9ac>
   PrefabRemaps:
     []
@@ -1289,6 +1330,43 @@
     CapitalizationOverride: None
   DepthTest: false
   TwoSided: false
+- !<ScriptComponent/1094deab-8c71-4084-9969-536afd1354c4>
+  PrefabRemaps:
+    []
+  Name: FlaneurPinSocialUi
+  Enabled: true
+  ScriptAsset: !<reference> 743ff105-d38b-406e-b960-9a2fdaa60a40
+  ScriptInputsDefault:
+    toastLocalX: true
+    toastLocalY: true
+    toastLocalZ: true
+    toastHoldSeconds: true
+    toastFadeSeconds: true
+    sidebarFab: true
+    sidebarCountBadge: true
+    sidebarPanel: true
+    sidebarListRoot: true
+    pinEntryPrefab: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
+      toastAnchor: !<reference.SceneObject> c993e9a5-7d90-4ec2-87f6-c1f632250707
+      toastText: !<reference.Text> 1704b0a1-6a30-47c9-8404-e59d02023900
+      toastLocalX: !<float> 0.000000
+      toastLocalY: !<float> 12.000000
+      toastLocalZ: !<float> -48.000000
+      toastHoldSeconds: 2.500000
+      toastFadeSeconds: 0.850000
+      sidebarFab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarCountBadge: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      sidebarPanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarListRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinEntryPrefab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/109f1535-207e-4694-9a78-153157957982>
   PrefabRemaps:
     []
@@ -6964,7 +7042,6 @@
   Enabled: true
   ScriptAsset: !<reference> 2501a5d7-fa1f-4229-823e-80609b4ce198
   ScriptInputsDefault:
-    startMode: true
     skipCustomLandmarkInLensStudio: true
   ScriptTypesDefault:
     {}
@@ -6974,7 +7051,7 @@
       locationCloudStorageModule: !<reference.LocationCloudStorageModule> c69f81a0-d63a-4b6c-bed2-7e5a88d1c538
       isColocated: true
       locatedAtComponent: !<reference.LocatedAtComponent> beec00b0-4949-4a32-a4a6-44afcb07b3e0
-      startMode: START_MENU
+      startMode: MULTIPLAYER
       skipCustomLandmarkInLensStudio: true
   ScriptTypes:
     "":
@@ -7354,7 +7431,7 @@
   PrefabRemaps:
     []
   Name: Tube
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 13.670380, z: 0.000000}
@@ -8695,6 +8772,21 @@
   ScriptTypes:
     "":
       {}
+- !<SceneObject/796615d9-baa7-427f-b768-6c1878aedfda>
+  PrefabRemaps:
+    []
+  Name: SocialPinUI
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 10.000000, y: 10.000000, z: 10.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 1094deab-8c71-4084-9969-536afd1354c4
 - !<SceneObject/79b19a3e-f06f-4066-be11-66ca9481cc4f>
   PrefabRemaps:
     []
@@ -11945,6 +12037,9 @@
   ScriptInputsDefault:
     placementDepth: true
     autoShareOnSoloConnect: true
+    useSpectaclesSyncKit: true
+    pinDropInteraction: true
+    capturePinPhotos: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -11955,6 +12050,10 @@
       worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
       placementDepth: !<float> 200.000000
       autoShareOnSoloConnect: true
+      useSpectaclesSyncKit: true
+      pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
+      logPinInputDebug: true
+      capturePinPhotos: true
   ScriptTypes:
     "":
       {}
@@ -13084,6 +13183,26 @@
     []
   Components:
     - !<own> 06ddc88a-c2f5-4afb-9510-c343ce38ffd6
+- !<RenderMeshVisual/b162c575-2b36-46c2-8274-80421ac901a1>
+  PrefabRemaps:
+    []
+  Name: Render Mesh Visual
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 9f5eb1b6-13c6-4dc1-9cd4-0ef2a1d37663
+  Mesh: !<reference> 54f17196-4bb0-4d80-86e8-a3c797d5b234
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
 - !<Text/b239b56f-62dd-4cd4-8db6-6bc3d432e596>
   PrefabRemaps:
     []
@@ -15276,6 +15395,21 @@
   ScriptTypes:
     "":
       {}
+- !<SceneObject/c993e9a5-7d90-4ec2-87f6-c1f632250707>
+  PrefabRemaps:
+    []
+  Name: Empty
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: -40.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 100.000000, y: 100.000000, z: 100.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    []
 - !<SceneObject/c9e72543-303e-4945-bcc9-c0b0807b3cf0>
   PrefabRemaps:
     []
@@ -15493,6 +15627,7 @@
     []
   Components:
     - !<own> a0a286c2-34f5-4e4d-9578-0d8ebad3e58c
+    - !<own> 012fe1fd-bda4-480f-b874-ec5685d6b83c
 - !<SceneObject/cd5f8ba0-151c-4924-a4b2-069229402c6e>
   PrefabRemaps:
     []
@@ -19280,6 +19415,21 @@
     - !<own> c121e5f8-5b0d-47d9-9715-e420fd4ab3c6
   Components:
     - !<own> 56b3edc4-5ea4-4a0a-ba2c-70ac258d2e85
+- !<SceneObject/f7bd3c3c-5235-41eb-bb00-89fb7eee6f07>
+  PrefabRemaps:
+    []
+  Name: Capsule
+  Enabled: false
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: -217.380005}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 100.000000, y: 100.000000, z: 100.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> b162c575-2b36-46c2-8274-80421ac901a1
 - !<Text/f86a0342-cb19-42e3-a643-093328cab88b>
   PrefabRemaps:
     []
