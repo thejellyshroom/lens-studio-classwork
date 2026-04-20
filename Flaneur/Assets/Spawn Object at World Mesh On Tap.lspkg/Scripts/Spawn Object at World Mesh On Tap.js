@@ -1,18 +1,34 @@
 // Spawn Object at World Mesh On Tap.js
 // Version: 0.0.1
 // Event: On Awake
-// Description: Tap to spawn prefab on the world mesh. When Flâneur exposes globals (after TurnOn), can commit pins instead of instantiating prefab.
+// Description: Tap to spawn prefab on the world mesh. When Flâneur exposes globals, can commit pins instead of instantiating prefab.
+// By default mesh hit + pin logic runs in LateUpdate so SIK / RoundButton receive the same Tap first (same-frame ordering).
+// Records whether the Flâneur sidebar was open when the tap was queued: if it was open then but closed before LateUpdate,
+// the tap is treated as UI (e.g. custom close) and does not place a pin.
 
 // @input Component.DeviceTracking deviceTracking
 // @input Asset.ObjectPrefab prefab
 // @input SceneObject parent
 // @input bool skipInstantiateWhenFlaneurPins = true
+// @input bool deferMeshTapToLateUpdate = true
 
 //@input Component.ScriptComponent[] behaviorCallback
 
 if (!script.deviceTracking) {
     print("ERROR: Please set the device tracking to the script.");
     return;
+}
+
+var queuedMeshTapScreenPos = null;
+var queuedSidebarOpenAtTap = false;
+
+function captureFlaneurSidebarOpenAtTap() {
+  try {
+    if (typeof global !== "undefined" && typeof global.flaneurPinIsSidebarOpen === "function") {
+      return global.flaneurPinIsSidebarOpen();
+    }
+  } catch (eSnap) {}
+  return false;
 }
 
 function shouldCommitFlaneurPinInstead() {
@@ -29,15 +45,43 @@ function shouldCommitFlaneurPinInstead() {
 
 function onTouch(eventData) {
     var touchPos = eventData.getTapPosition();
-    spawnObjectOnWorldMeshAt(touchPos);
+    var sidebarSnap = captureFlaneurSidebarOpenAtTap();
+    if (script.deferMeshTapToLateUpdate === false) {
+        spawnObjectOnWorldMeshAt(touchPos, sidebarSnap);
+        return;
+    }
+    queuedMeshTapScreenPos = touchPos;
+    queuedSidebarOpenAtTap = sidebarSnap;
 }
 
-function spawnObjectOnWorldMeshAt(screenPos) {
+function spawnObjectOnWorldMeshAt(screenPos, sidebarWasOpenWhenTapQueued) {
+    if (sidebarWasOpenWhenTapQueued === undefined) {
+        sidebarWasOpenWhenTapQueued = false;
+    }
+    try {
+        if (typeof global.flaneurPinIsMeshPinSuppressedAfterSidebarClose === "function" && global.flaneurPinIsMeshPinSuppressedAfterSidebarClose()) {
+            return;
+        }
+    } catch (eSupUi) {}
     try {
         if (typeof global.flaneurPinIsScreenOverBlockerUi === "function" && global.flaneurPinIsScreenOverBlockerUi(screenPos)) {
             return;
         }
     } catch (eBlock) {}
+    try {
+        if (typeof global.flaneurPinIsSidebarOpen === "function" && global.flaneurPinIsSidebarOpen()) {
+            return;
+        }
+    } catch (eSide) {}
+    try {
+        if (
+            sidebarWasOpenWhenTapQueued === true &&
+            typeof global.flaneurPinIsSidebarOpen === "function" &&
+            !global.flaneurPinIsSidebarOpen()
+        ) {
+            return;
+        }
+    } catch (eRace) {}
 
     var results = script.deviceTracking.hitTestWorldMesh(screenPos);
 
@@ -86,3 +130,17 @@ function triggerBehaviors(behaviors) {
 }
 
 script.createEvent("TapEvent").bind(onTouch);
+
+script.createEvent("LateUpdateEvent").bind(function () {
+    if (script.deferMeshTapToLateUpdate === false) {
+        return;
+    }
+    if (!queuedMeshTapScreenPos) {
+        return;
+    }
+    var pos = queuedMeshTapScreenPos;
+    var sideSnap = queuedSidebarOpenAtTap;
+    queuedMeshTapScreenPos = null;
+    queuedSidebarOpenAtTap = false;
+    spawnObjectOnWorldMeshAt(pos, sideSnap);
+});

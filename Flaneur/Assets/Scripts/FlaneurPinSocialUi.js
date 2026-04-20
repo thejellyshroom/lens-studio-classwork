@@ -11,14 +11,28 @@
  *    mesh hits when tapping that UI (`flaneurPinIsScreenOverBlockerUi`). On **FlaneurMultiplayerMarkers** leave **Pin Drop
  *    Listen Trigger Primary** OFF so SIK RoundButton keeps primary input; increase **Pin Drop World UI Block Screen Radius**
  *    slightly if taps near Next still place pins.
- * 2) Sidebar toggle — Pick ONE:
- *    A) Spectacles UI **RoundButton** (Next, etc.): enable **addCallbacks** on the button. Add an entry under
- *       **onValueChangeCallbacks** → target this **FlaneurPinSocialUi** script → **`flaneurSidebarSetOpen`**
- *       (passes toggle on/off; mirrors panel to button). OR use **triggerUpCallbacks** → **`flaneurToggleSidebar`**
- *       (one flip per finger-up, ignores stored toggle value).
+ * 2) Sidebar toggle — Pick ONE callback path (do **not** stack two on the same Trigger Up):
+ *    A) **RoundButton (toggleable):** use **On Value Changed Callbacks** → **`flaneurSidebarSetOpen`** (SIK passes on/off).
+ *       OR **Trigger Up** → **`flaneurToggleSidebar`** only. Never put **both** `flaneurSidebarSetOpen` and `flaneurToggleSidebar`
+ *       on the same Trigger Up—they run in order and the second undoes the first (sidebar stays closed). If you already
+ *       wired both, **flaneurToggleSidebar** debounces a duplicate within ~50ms; **flaneurSidebarSetOpen** does not (explicit
+ *       close / false always runs).
+ *    **Custom sidebar close:** Turn off the UIKit Frame built-in close if you like, add your own control, and wire
+ *    **Trigger Up** / **onTap** to **`flaneurSidebarClose`**, **`global.flaneurPinSidebarClose`**, or **`flaneurSidebarSetOpen(false)`**
+ *    (same script instance as the FAB / RoundButton callbacks). Closing opens a short global window so deferred mesh
+ *    taps do not place a pin on the same gesture (`flaneurPinIsMeshPinSuppressedAfterSidebarClose`).
+ *    **SIK “no hover / no click” anywhere:** First confirm **SpectaclesInteractionKit.prefab** (Spectacles Interaction
+ *    Kit package) is placed in the scene — without it there is no **MouseInteractor** / hand rig and **all**
+ *    Interactables are dead in Preview and Simulator. Then on **head‑follow world UI** set **Ignore Interaction
+ *    Plane** ON on each **Interactable** so plane tests do not reject rays. Keep **Editor Touch Blocking For Preview**
+ *    OFF on **FlaneurMultiplayerMarkers** (`touchBlocking` swallows UI). Disable huge debug colliders in front of UI.
  *    B) Raw **InteractionComponent**: assign "Sidebar Toggle Interaction", OR "Sidebar Fab" with IC on root.
  * 3) Badge — Small Text (pin count). Assign to "Sidebar Count Badge".
  * 4) Panel — SIK / UI Starter vertical layout container for the list. Assign "Sidebar Panel". Start disabled.
+ *    If the **Sidebar** branch is disabled in the Hierarchy (common), assign **Sidebar Branch Root** to that parent object
+ *    (e.g. the empty named Sidebar above the panel). Open/close then toggles that root so the list can appear. While the
+ *    sidebar is open, **FlaneurMultiplayerMarkers** temporarily disables **pin colliders** so SIK rays hit the panel/close
+ *    button instead of pins in front of the UI.
  * 5) List root — Empty child under the panel where cloned rows parent. Assign "Sidebar List Root".
  * 6) Row prefab — Disabled template with children: PinPhoto (Image), PinName (Text), PinReacts (Text),
  *    React0 / React1 / React2 (each with InteractionComponent).
@@ -44,10 +58,25 @@
 // @input SceneObject sidebarFab
 // @input Component.Text sidebarCountBadge
 // @input SceneObject sidebarPanel
+// @input SceneObject sidebarBranchRoot
 // @input SceneObject sidebarListRoot
 // @input SceneObject pinEntryPrefab
 
 var sidebarOpen = false;
+var sidebarToggleBurstT = -999;
+var sidebarToggleBurstCount = 0;
+/** Brief window after sidebar closes so deferred mesh tap (same finger as Close) does not place a pin. */
+var suppressMeshPinAfterSidebarCloseUntil = -1;
+
+function shouldIgnoreSecondToggleInBurst() {
+  var t = getTime();
+  if (t - sidebarToggleBurstT > 0.05) {
+    sidebarToggleBurstT = t;
+    sidebarToggleBurstCount = 0;
+  }
+  sidebarToggleBurstCount++;
+  return sidebarToggleBurstCount > 1;
+}
 var dynamicRows = [];
 var seenPinIds = {};
 var seenPinsSeeded = false;
@@ -478,15 +507,53 @@ function onStoreKeyUpdated(key) {
   updatePinCountBadge();
 }
 
+function enableAncestorsUpToDepth(leaf, maxUp) {
+  if (!leaf || isNull(leaf)) {
+    return;
+  }
+  var chain = [];
+  var cur = leaf;
+  var u;
+  for (u = 0; u < maxUp && cur && !isNull(cur); u++) {
+    chain.push(cur);
+    cur = cur.getParent();
+  }
+  for (var i = chain.length - 1; i >= 0; i--) {
+    try {
+      chain[i].enabled = true;
+    } catch (e0) {}
+  }
+}
+
 function applySidebarOpenState(isOpen) {
+  var wasOpen = sidebarOpen;
   sidebarOpen = !!isOpen;
-  if (script.sidebarPanel && !isNull(script.sidebarPanel)) {
-    script.sidebarPanel.enabled = sidebarOpen;
+  if (wasOpen && !sidebarOpen) {
+    suppressMeshPinAfterSidebarCloseUntil = getTime() + 0.08;
+  }
+  var br = script.sidebarBranchRoot;
+  var pan = script.sidebarPanel;
+  if (br && !isNull(br)) {
+    try {
+      br.enabled = sidebarOpen;
+    } catch (e1) {}
+  } else if (sidebarOpen && pan && !isNull(pan)) {
+    enableAncestorsUpToDepth(pan, 24);
+  }
+  if (pan && !isNull(pan)) {
+    try {
+      pan.enabled = sidebarOpen;
+    } catch (e2) {}
   }
   if (sidebarOpen) {
     rebuildPinList();
   }
   updatePinCountBadge();
+  try {
+    if (typeof global !== "undefined" && typeof global.flaneurPinNotifySidebarOpenChanged === "function") {
+      global.flaneurPinNotifySidebarOpenChanged(sidebarOpen);
+    }
+  } catch (eNotify) {}
 }
 
 function toggleSidebarPanel() {
@@ -495,11 +562,14 @@ function toggleSidebarPanel() {
 
 function exposeSidebarMethodsForRoundButtonCallbacks() {
   script.flaneurToggleSidebar = function () {
+    if (shouldIgnoreSecondToggleInBurst()) {
+      return;
+    }
     toggleSidebarPanel();
   };
   script.flaneurSidebarSetOpen = function (value) {
     if (arguments.length === 0) {
-      toggleSidebarPanel();
+      applySidebarOpenState(true);
       return;
     }
     var on;
@@ -512,12 +582,24 @@ function exposeSidebarMethodsForRoundButtonCallbacks() {
     }
     applySidebarOpenState(on);
   };
+  script.flaneurSidebarClose = function () {
+    applySidebarOpenState(false);
+  };
   try {
     global.flaneurTogglePinSidebar = function () {
-      toggleSidebarPanel();
+      script.flaneurToggleSidebar();
     };
     global.flaneurPinSidebarSetOpen = function (v) {
       script.flaneurSidebarSetOpen(v);
+    };
+    global.flaneurPinSidebarClose = function () {
+      script.flaneurSidebarClose();
+    };
+    global.flaneurPinIsSidebarOpen = function () {
+      return sidebarOpen;
+    };
+    global.flaneurPinIsMeshPinSuppressedAfterSidebarClose = function () {
+      return getTime() < suppressMeshPinAfterSidebarCloseUntil;
     };
   } catch (e) {}
 }
@@ -543,7 +625,7 @@ function wireSidebarToggle() {
   }
   if (!wired) {
     print(
-      "[Flaneur][UI] Sidebar: use Spectacles RoundButton addCallbacks → onValueChangeCallbacks → this script.flaneurSidebarSetOpen, or triggerUpCallbacks → flaneurToggleSidebar."
+      "[Flaneur][UI] Sidebar: RoundButton → onValueChangeCallbacks → flaneurSidebarSetOpen, OR triggerUp → flaneurToggleSidebar only (not both on same Trigger Up)."
     );
   }
 }
@@ -566,15 +648,25 @@ script.createEvent("TurnOnEvent").bind(function () {
   } catch (e) {}
   exposeSidebarMethodsForRoundButtonCallbacks();
   sidebarOpen = false;
+  if (script.sidebarBranchRoot && !isNull(script.sidebarBranchRoot)) {
+    try {
+      script.sidebarBranchRoot.enabled = false;
+    } catch (eBr) {}
+  }
   if (script.sidebarPanel && !isNull(script.sidebarPanel)) {
     script.sidebarPanel.enabled = false;
   }
+  try {
+    if (typeof global !== "undefined" && typeof global.flaneurPinNotifySidebarOpenChanged === "function") {
+      global.flaneurPinNotifySidebarOpenChanged(false);
+    }
+  } catch (eInit) {}
   if (script.toastAnchor && !isNull(script.toastAnchor)) {
     script.toastAnchor.enabled = false;
   }
   wireSidebarToggle();
   updatePinCountBadge();
   print(
-    "[Flaneur][UI] Social UI on. RoundButton → flaneurSidebarSetOpen / flaneurToggleSidebar; head UI uses smooth follow (fast straight / soft strafe+yaw). Assign Head Follow UI Root for toast+Next+sidebar."
+    "[Flaneur][UI] Social UI on. SIK needs SpectaclesInteractionKit.prefab in scene (MouseInteractor + hands). Then RoundButton: onValueChanged → flaneurSidebarSetOpen OR triggerUp → flaneurToggleSidebar only; world UI: Ignore Interaction Plane on Interactables; markers: Editor Touch Blocking OFF."
   );
 });

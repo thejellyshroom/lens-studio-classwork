@@ -4,8 +4,18 @@
  * SETUP IN LENS STUDIO:
  * 1) Add Empty Scene Object (e.g. "Flaneur_Multiplayer").
  * 2) Add this script + assign Connected Lens Module (same asset as the official example prefab).
- * 3) Optional: assign "Markers Root" to your shared world root (e.g. child of Device Tracking / world space).
+ * 3) Optional: assign "Markers Root" — **parent** for spawned pin copies (stable hierarchy, template copies, etc.).
  *    If empty, pins parent to this object (fine for a first test).
+ *    **Pin Store Coordinate Root** (optional): **RealtimeStore** x/y/z are **local in this object’s space** (same as
+ *    Snap’s Colocated / Located At content root). For **Connected Custom Location**, Snap documents **Custom Location
+ *    Group is not supported** — a `LocationRoot` with **CustomLocationGroupComponent** and multiple trackables can
+ *    desync from colocated multiplayer; prefer a **single** Located At on **ColocatedWorld** for that flow.
+ *    When Pin Store Coordinate Root is set (e.g. **ColocatedWorld**), spawned pins **parent there** and use
+ *    **setLocalPosition(x,y,z)** so placement matches the store (no mixed parent vs. storage frame). **Markers Root**
+ *    is then optional/legacy for that mode. `SetEnabledOnReady` on ColocatedWorld only toggles its configured child
+ *    objects — dynamically added pin copies stay enabled via this script.
+ *    If Pin Store Coordinate Root is empty, pins parent under Markers Root and coords use that root (legacy).
+ *    Keep **Pin Template** near origin (0,0,0) with the template **disabled** in Hierarchy so copies spawn enabled.
  * 4) Optional: assign "Pin Template" — a SIMPLE object only (e.g. small Box/Sphere mesh you add).
  *    Do NOT use AR Navigation Kit objects (ARNavigation, etc.): they need navigationDataComponent and will error when copied.
  *    If empty, spawns empty SceneObjects (sync still works; add a template for visibility).
@@ -19,6 +29,15 @@
  * - Start flow: use Sync Kit Start Menu → Multiplayer (needs internet) OR Singleplayer with "Mocked Online" if you need a mock session without buttons in preview.
  * - Manual Singleplayer hides the menu without calling init() — there is no RealtimeStore in that mode.
  *
+ * SPECTACLES INTERACTION KIT (required for Interactable / RoundButton / SIK UI):
+ * Your scene must include **SpectaclesInteractionKit.prefab** from the Spectacles Interaction Kit package (the
+ * prefab intended to be placed in the scene — it registers **MouseInteractor** for Lens Studio Preview / editor and
+ * **HandInteractor** rigs for device). If this prefab is missing, SIK **Interactable**s never receive targeting:
+ * buttons look fine but never hover or click in Simulator or Preview. This is independent of Flâneur scripts.
+ * Enabling **SIK Examples** alone does not substitute for that core prefab. After the kit is in the scene, on
+ * **head‑follow world UI** set **Ignore Interaction Plane** on Interactables as needed; keep **Editor Touch
+ * Blocking For Preview** OFF here (`touchBlocking` blocks UI).
+ *
  * SPECTACLES PREVIEW (Lens Studio) + SIK:
  * Mouse goes through MouseInteractor → Interactables; global Tap/Touch on this script often never fires.
  * - Turn ON "Log Pin Input Debug" once to see which path (if any) receives input.
@@ -27,13 +46,15 @@
  * - Or double-tap in the Preview panel (DoubleTapEvent).
  *
  * WITH SIK / ON-SCREEN UI + PIN DROP:
- * - **Spawn Object at World Mesh On Tap**: keep **Pin Drop From Global Screen Events OFF**; that script handles **TapEvent**
- *   and calls `flaneurPinIsScreenOverBlockerUi` then `flaneurCommitPinAtWorldPosition` when **Skip Instantiate When Flaneur Pins**
- *   is ON. Pins still use **Pin Template**.
- * - **SIK RoundButton:** leave **Pin Drop Listen Trigger Primary OFF** (default). If ON, this script also handles
- *   **TriggerPrimaryEvent** and competes with SIK for the same input—buttons often stop receiving hits.
- * - **Pin Drop UI Blocker Root Extra** = your **UI** parent (Toast / Next / Sidebar). Uses **ScreenTransform** hits plus
- *   **world mesh/text/collider** positions projected to screen (**Pin Drop World UI Block Screen Radius**) for head-anchored SIK.
+ * - **Spawn Object at World Mesh On Tap**: keep **Pin Drop From Global Screen Events OFF**; that script queues **TapEvent**
+ *   and runs mesh hit + `flaneurCommitPinAtWorldPosition` in **LateUpdate** (default) so SIK buttons get the tap first.
+ *   Turn **Defer Mesh Tap To Late Update** OFF only if debugging ordering.
+ * - **SIK RoundButton / sidebar:** leave **Pin Drop Listen Trigger Primary OFF** (default). When the sidebar is open,
+ *   `flaneurPinNotifySidebarOpenChanged` disables **pin colliders** if your template has them (helps SIK depth order).
+ * - **Pin Drop UI Blocker Root Extra** = your **UI** parent. Blocking = **ScreenTransform.containsScreenPoint** plus many
+ *   **SceneObject positions** under those roots projected to screen (**Pin Drop UI World Projection Sample Budget** + **Pin Drop
+ *   World UI Block Screen Radius**). SIK nodes often lack colliders/meshes on every object—dense transforms catch taps better.
+ *   If UI uses another camera for layout, assign **Pin Drop UI Screen Space Camera**.
  * - Optional **Pin Drop From Global Screen Events** for legacy depth drops on this script. **Pin Drop UI Blocker Root** = SIK canvas if needed.
  * - "Editor Touch Blocking For Preview" stays OFF by default (touchBlocking blocks UI in Preview).
  *
@@ -45,6 +66,7 @@
 
 // @input Asset.ConnectedLensModule connectedLensModule
 // @input SceneObject markersRoot
+// @input SceneObject pinStoreCoordinateRoot
 // @input SceneObject pinTemplate
 // @input Component.Camera worldCamera
 // @input float placementDepth = 200
@@ -59,7 +81,9 @@
 // @input SceneObject pinDropUiBlockerRootExtra
 // @input bool pinDropListenTriggerPrimary = false
 // @input bool pinDropUseWorldUiProjectionBlock = true
-// @input float pinDropWorldUiBlockScreenRadius = 0.11
+// @input float pinDropWorldUiBlockScreenRadius = 0.26
+// @input int pinDropUiWorldProjectionSampleBudget = 400
+// @input Component.Camera pinDropUiScreenSpaceCamera
 
 var FLANEUR_STORE_ID = "flaneur_pins_v1";
 var PIN_KEY_PREFIX = "pin:";
@@ -86,9 +110,11 @@ var syncKitSc = null;
 var syncKitWired = false;
 var standaloneWired = false;
 var syncKitSpinEvent = null;
+var receiverStorePollEvent = null;
 var pinDropUiBlockerRects = [];
 var pinDropUiBlockerWorldPoints = [];
 var pinDropUiBlockerWarned = false;
+var pinCollidersMutedForSidebarUi = false;
 
 function collectScreenTransformsUnder(so, outList) {
   if (!so || isNull(so)) {
@@ -107,58 +133,49 @@ function collectScreenTransformsUnder(so, outList) {
 function refreshPinDropUiBlockers() {
   pinDropUiBlockerRects = [];
   pinDropUiBlockerWorldPoints = [];
+  var budget = script.pinDropUiWorldProjectionSampleBudget;
+  if (budget === undefined || budget < 24) {
+    budget = 400;
+  }
+  if (budget > 900) {
+    budget = 900;
+  }
+  var budgetRef = { n: budget };
   if (script.pinDropUiBlockerRoot && !isNull(script.pinDropUiBlockerRoot)) {
     collectScreenTransformsUnder(script.pinDropUiBlockerRoot, pinDropUiBlockerRects);
-    collectWorldPositionsUnderBlockerForUiTap(script.pinDropUiBlockerRoot, pinDropUiBlockerWorldPoints, 0);
+    collectWorldPositionsUnderBlockerForUiTap(script.pinDropUiBlockerRoot, pinDropUiBlockerWorldPoints, 0, budgetRef);
   }
   if (script.pinDropUiBlockerRootExtra && !isNull(script.pinDropUiBlockerRootExtra)) {
     collectScreenTransformsUnder(script.pinDropUiBlockerRootExtra, pinDropUiBlockerRects);
-    collectWorldPositionsUnderBlockerForUiTap(script.pinDropUiBlockerRootExtra, pinDropUiBlockerWorldPoints, 0);
+    collectWorldPositionsUnderBlockerForUiTap(script.pinDropUiBlockerRootExtra, pinDropUiBlockerWorldPoints, 0, budgetRef);
   }
 }
 
-function shouldSampleWorldPositionForUiBlock(so) {
-  if (!so || isNull(so)) {
-    return false;
-  }
-  try {
-    if (so.getComponent("Component.RenderMeshVisual")) {
-      return true;
-    }
-  } catch (e0) {}
-  try {
-    if (so.getComponent("Component.Text")) {
-      return true;
-    }
-  } catch (e1) {}
-  try {
-    if (so.getComponent("Physics.ColliderComponent")) {
-      return true;
-    }
-  } catch (e2) {}
-  try {
-    if (so.getComponent("Component.ColliderComponent")) {
-      return true;
-    }
-  } catch (e2b) {}
-  return false;
-}
-
-function collectWorldPositionsUnderBlockerForUiTap(so, outPts, depth) {
-  if (!so || isNull(so) || depth > 64) {
+function collectWorldPositionsUnderBlockerForUiTap(so, outPts, depth, budgetRef) {
+  if (!so || isNull(so) || depth > 72) {
     return;
   }
   if (!so.enabled) {
     return;
   }
-  if (shouldSampleWorldPositionForUiBlock(so)) {
-    try {
-      outPts.push(so.getTransform().getWorldPosition());
-    } catch (e3) {}
+  if (budgetRef && budgetRef.n <= 0) {
+    return;
+  }
+  try {
+    outPts.push(so.getTransform().getWorldPosition());
+    if (budgetRef) {
+      budgetRef.n--;
+    }
+  } catch (e3) {}
+  if (budgetRef && budgetRef.n <= 0) {
+    return;
   }
   var n = so.getChildrenCount();
   for (var i = 0; i < n; i++) {
-    collectWorldPositionsUnderBlockerForUiTap(so.getChild(i), outPts, depth + 1);
+    collectWorldPositionsUnderBlockerForUiTap(so.getChild(i), outPts, depth + 1, budgetRef);
+    if (budgetRef && budgetRef.n <= 0) {
+      break;
+    }
   }
 }
 
@@ -173,7 +190,7 @@ function isTapNearWorldUiProjectionBlocker(cam, screenNorm) {
   ) {
     return false;
   }
-  var rad = script.pinDropWorldUiBlockScreenRadius > 0.02 ? script.pinDropWorldUiBlockScreenRadius : 0.11;
+  var rad = script.pinDropWorldUiBlockScreenRadius > 0.02 ? script.pinDropWorldUiBlockScreenRadius : 0.26;
   var rad2 = rad * rad;
   var snx = screenNorm.x;
   var sny = screenNorm.y;
@@ -213,8 +230,8 @@ function isTapOverPinDropUiBlocker(screenNorm) {
       }
     } catch (e) {}
   }
-  var camW = getWorldCamera();
-  if (camW && !isNull(camW) && isTapNearWorldUiProjectionBlocker(camW, screenNorm)) {
+  var camProj = getCameraForUiScreenProjection();
+  if (camProj && !isNull(camProj) && isTapNearWorldUiProjectionBlocker(camProj, screenNorm)) {
     return true;
   }
   return false;
@@ -265,16 +282,69 @@ function onSpectaclesSyncConnected(s, connectionInfo) {
       }
     });
   } catch (e) {}
+  // Only strict true is the store creator. Anything else (false **or** undefined) must
+  // use the joiner path: tryBind + poll until the host’s store appears (dual preview /
+  // SessionController timing can leave isHost unset briefly or on the second client).
   if (sc && sc.isHost() === true) {
     onStarterConnectedToMultiplayer(s);
-  } else if (sc && sc.isHost() === false) {
-    onReceiverConnectedToMultiplayer(s);
   } else {
-    tryBindExistingFlaneurStore(s);
+    onReceiverConnectedToMultiplayer(s);
   }
 }
 
+function stopReceiverStorePoll() {
+  if (receiverStorePollEvent) {
+    script.removeEvent(receiverStorePollEvent);
+    receiverStorePollEvent = null;
+  }
+}
+
+/** Joiner: host store may appear in session slightly after onConnected; poll until bind or timeout. */
+function startReceiverStorePoll(sess) {
+  stopReceiverStorePoll();
+  var pollSession = sess;
+  if (!pollSession || isNull(pollSession)) {
+    pollSession = session;
+  }
+  if (!pollSession || isNull(pollSession)) {
+    return;
+  }
+  var frames = 0;
+  var maxFrames = 1800;
+  receiverStorePollEvent = script.createEvent("UpdateEvent");
+  receiverStorePollEvent.bind(function () {
+    if (flaneurStore) {
+      stopReceiverStorePoll();
+      return;
+    }
+    frames++;
+    if (frames > maxFrames) {
+      var nStores = (pollSession && pollSession.allRealtimeStores) ? pollSession.allRealtimeStores.length : -1;
+      print("[Flaneur][net] Receiver: gave up waiting for flaneur store after ~30s. session stores=" + nStores + ". Host may never have created it — check host logs for 'RealtimeStore bound: flaneur_pins_v1'.");
+      stopReceiverStorePoll();
+      return;
+    }
+    if (frames % 120 === 0) {
+      var n = (pollSession && pollSession.allRealtimeStores) ? pollSession.allRealtimeStores.length : -1;
+      var ids = [];
+      if (pollSession && pollSession.allRealtimeStores) {
+        for (var i = 0; i < pollSession.allRealtimeStores.length; i++) {
+          ids.push(getStoreIdSafe(pollSession, pollSession.allRealtimeStores[i]) || "?");
+        }
+      }
+      print("[Flaneur][net] Poll waiting for flaneur store (" + (frames / 60).toFixed(0) + "s). stores=" + n + " ids=[" + ids.join(",") + "]");
+    }
+    try {
+      if (tryBindExistingFlaneurStore(pollSession)) {
+        print("[Flaneur][net] Receiver: RealtimeStore appeared in session (poll bind).");
+        stopReceiverStorePoll();
+      }
+    } catch (ePoll) {}
+  });
+}
+
 function onSpectaclesSyncDisconnected(sess, disconnectInfo) {
+  stopReceiverStorePoll();
   clearAllMarkerObjects();
   flaneurStore = null;
   session = null;
@@ -298,11 +368,14 @@ function onSpectaclesSyncStoreKeyRemoved(sess, storeOrRemoval, removalInfoMaybe)
     info = storeOrRemoval;
     st = info.store;
   }
-  if (st !== flaneurStore) {
+  if (!st || isNull(st) || getStoreIdSafe(sess, st) !== FLANEUR_STORE_ID) {
     return;
   }
+  if (st !== flaneurStore) {
+    bindFlaneurStore(st);
+  }
   var key = info.key;
-  if (key.indexOf(PIN_KEY_PREFIX) === 0) {
+  if (typeof key === "string" && key.indexOf(PIN_KEY_PREFIX) === 0) {
     removeMarkerForKey(key);
   }
 }
@@ -431,6 +504,13 @@ function onStarterConnectedToSolo(sess) {
 }
 
 function onStarterConnectedToMultiplayer(sess) {
+  // If another client already created the store (dual preview where both sides think they
+  // are host is common), bind that one instead of creating a duplicate.
+  if (tryBindExistingFlaneurStore(sess)) {
+    print("[Flaneur][net] Host path: flaneur store already exists — bound existing.");
+    return;
+  }
+
   var opts = RealtimeStoreCreateOptions.create();
   opts.storeId = FLANEUR_STORE_ID;
   opts.ownership = RealtimeStoreCreateOptions.Ownership.Unowned;
@@ -439,12 +519,18 @@ function onStarterConnectedToMultiplayer(sess) {
   opts.initialStore = GeneralDataStore.create();
 
   var onOk = function (store) {
+    print("[Flaneur][net] createRealtimeStore succeeded.");
     bindFlaneurStore(store);
   };
   var onErr = function (err) {
-    print("[Flaneur] createRealtimeStore failed: " + err);
+    print("[Flaneur][net] createRealtimeStore failed: " + err + " — falling back to receiver poll.");
+    // If creation failed (e.g. store already exists), behave like a joiner.
+    if (!tryBindExistingFlaneurStore(sess)) {
+      startReceiverStorePoll(sess);
+    }
   };
 
+  print("[Flaneur][net] Host path: creating flaneur store (" + FLANEUR_STORE_ID + ")…");
   if (syncKitSc && syncKitSc.createStore) {
     syncKitSc.createStore(opts, onOk, onErr);
   } else {
@@ -453,17 +539,37 @@ function onStarterConnectedToMultiplayer(sess) {
 }
 
 function onReceiverConnectedToMultiplayer(sess) {
-  if (!tryBindExistingFlaneurStore(sess)) {
-    print("[Flaneur] Receiver connected; waiting for RealtimeStore (onRealtimeStoreCreated).");
+  var isHostFlag = null;
+  try {
+    if (syncKitSc && typeof syncKitSc.isHost === "function") {
+      isHostFlag = syncKitSc.isHost();
+    }
+  } catch (eH) {}
+  print("[Flaneur][net] Receiver path entered (isHost=" + String(isHostFlag) + "). allRealtimeStores=" + ((sess && sess.allRealtimeStores) ? sess.allRealtimeStores.length : "?"));
+  if (tryBindExistingFlaneurStore(sess)) {
+    stopReceiverStorePoll();
+    return;
   }
+  print("[Flaneur][net] Receiver connected; waiting for RealtimeStore (poll up to ~10s).");
+  startReceiverStorePoll(sess);
 }
 
 function tryBindExistingFlaneurStore(sess) {
+  if (!sess || !sess.allRealtimeStores) {
+    return false;
+  }
   var stores = sess.allRealtimeStores;
   for (var i = 0; i < stores.length; i++) {
-    var info = sess.getRealtimeStoreInfo(stores[i]);
-    if (info.storeId === FLANEUR_STORE_ID) {
-      bindFlaneurStore(stores[i]);
+    var st = stores[i];
+    if (!st || isNull(st)) {
+      continue;
+    }
+    if (flaneurStore === st) {
+      return true;
+    }
+    var sid = getStoreIdSafe(sess, st);
+    if (sid === FLANEUR_STORE_ID) {
+      bindFlaneurStore(st);
       return true;
     }
   }
@@ -512,26 +618,73 @@ function refreshLocalDisplayNameFromSession() {
 }
 
 function bindFlaneurStore(store) {
-  if (!store) {
+  if (!store || isNull(store)) {
     return;
   }
+  if (flaneurStore === store) {
+    return;
+  }
+  // Do NOT return early when two GeneralDataStore references share the same logical
+  // storeId (Connected Lens / Sync Kit can hand a poll-bound handle, then a second
+  // handle from onRealtimeStoreCreated). Updates are delivered on the canonical ref —
+  // if we keep the stale one, `store !== flaneurStore` drops every remote key update.
   flaneurStore = store;
+  stopReceiverStorePoll();
+  var nKeys = -1;
+  try {
+    var ks = flaneurStore.getAllKeys();
+    nKeys = ks ? ks.length : 0;
+  } catch (eK) {}
+  print("[Flaneur][net] RealtimeStore bound: " + FLANEUR_STORE_ID + (nKeys >= 0 ? " (" + nKeys + " existing keys) — rebuilding markers." : "."));
   rebuildAllMarkersFromStore();
   publishGlobalApi();
   refreshLocalDisplayNameFromSession();
 }
 
+function getStoreIdSafe(sess, store) {
+  try {
+    if (!sess || !store || !sess.getRealtimeStoreInfo) {
+      return null;
+    }
+    var inf = sess.getRealtimeStoreInfo(store);
+    return inf ? inf.storeId : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function onRealtimeStoreCreated(sess, store, userInfo, creationInfo) {
-  if (creationInfo.storeId === FLANEUR_STORE_ID) {
+  if (!store || isNull(store)) {
+    return;
+  }
+  var sid = creationInfo && creationInfo.storeId;
+  if (!sid) {
+    sid = getStoreIdSafe(sess, store);
+  }
+  print("[Flaneur][net] onRealtimeStoreCreated storeId=" + sid + " by=" + (userInfo && userInfo.displayName ? userInfo.displayName : "?"));
+  if (sid === FLANEUR_STORE_ID) {
     bindFlaneurStore(store);
   }
 }
 
 function onRealtimeStoreUpdated(sess, store, key, updateInfo) {
+  if (!store || isNull(store)) {
+    return;
+  }
+  var sidUp = getStoreIdSafe(sess, store);
+  if (sidUp === FLANEUR_STORE_ID && store !== flaneurStore) {
+    print("[Flaneur][net] Flaneur store handle changed — repointing from update (key=" + String(key) + ").");
+    bindFlaneurStore(store);
+  }
+  tryBindFlaneurStoreFromSessionIfNeeded(sess, store);
   if (store !== flaneurStore) {
     return;
   }
+  if (typeof key !== "string" || !key.indexOf) {
+    return;
+  }
   if (key.indexOf(PIN_KEY_PREFIX) === 0) {
+    print("[Flaneur][net] Store pin key update: " + key);
     applyMarkerKey(key);
   }
   try {
@@ -542,17 +695,27 @@ function onRealtimeStoreUpdated(sess, store, key, updateInfo) {
 }
 
 function onRealtimeStoreKeyRemoved(sess, removalInfo) {
-  if (!removalInfo.store || removalInfo.store !== flaneurStore) {
+  if (!removalInfo || !removalInfo.store || isNull(removalInfo.store)) {
     return;
   }
+  var st = removalInfo.store;
+  if (getStoreIdSafe(sess, st) !== FLANEUR_STORE_ID) {
+    return;
+  }
+  if (st !== flaneurStore) {
+    bindFlaneurStore(st);
+  }
   var key = removalInfo.key;
-  if (key.indexOf(PIN_KEY_PREFIX) === 0) {
+  if (typeof key === "string" && key.indexOf(PIN_KEY_PREFIX) === 0) {
     removeMarkerForKey(key);
   }
 }
 
 function onRealtimeStoreDeleted(sess, store) {
-  if (store !== flaneurStore) {
+  if (!store || isNull(store)) {
+    return;
+  }
+  if (getStoreIdSafe(sess, store) !== FLANEUR_STORE_ID) {
     return;
   }
   clearAllMarkerObjects();
@@ -589,6 +752,55 @@ function getMarkersParent() {
   return script.getSceneObject();
 }
 
+/** SceneObject parent for pin copies: colocated root when store uses it, else Markers Root. */
+function getPinInstanceParent() {
+  var cr = script.pinStoreCoordinateRoot;
+  if (cr && !isNull(cr)) {
+    return cr;
+  }
+  return getMarkersParent();
+}
+
+/**
+ * Parent used only for `copySceneObject(template)` — keep Markers Root / script object so template
+ * copies (e.g. Tube) instantiate reliably. ColocatedWorld as copy parent can fail or drop visuals.
+ */
+function getPinTemplateCopyParent() {
+  return getMarkersParent();
+}
+
+/** World ↔ stored vec3 for RealtimeStore; may differ from Markers Root (see header). */
+function getPinStoreCoordinateRoot() {
+  var cr = script.pinStoreCoordinateRoot;
+  if (cr && !isNull(cr)) {
+    return cr;
+  }
+  var mr = script.markersRoot;
+  if (mr && !isNull(mr)) {
+    return mr;
+  }
+  return null;
+}
+
+function tryBindFlaneurStoreFromSessionIfNeeded(sess, store) {
+  if (!sess || !store || isNull(store) || flaneurStore === store) {
+    return;
+  }
+  if (flaneurStore) {
+    return;
+  }
+  try {
+    if (!sess.getRealtimeStoreInfo) {
+      return;
+    }
+    var info = sess.getRealtimeStoreInfo(store);
+    if (info && info.storeId === FLANEUR_STORE_ID) {
+      dbgPin("Bound RealtimeStore from onRealtimeStoreUpdated (joiner / late path).");
+      bindFlaneurStore(store);
+    }
+  } catch (eBind) {}
+}
+
 function getWorldCamera() {
   if (script.worldCamera && !isNull(script.worldCamera)) {
     return script.worldCamera;
@@ -600,8 +812,15 @@ function getWorldCamera() {
   return null;
 }
 
+function getCameraForUiScreenProjection() {
+  if (script.pinDropUiScreenSpaceCamera && !isNull(script.pinDropUiScreenSpaceCamera)) {
+    return script.pinDropUiScreenSpaceCamera;
+  }
+  return getWorldCamera();
+}
+
 function worldPointToStoredVec3(worldPos) {
-  var root = script.markersRoot;
+  var root = getPinStoreCoordinateRoot();
   if (root && !isNull(root)) {
     var inv = root.getTransform().getInvertedWorldTransform();
     return inv.multiplyPoint(worldPos);
@@ -610,7 +829,7 @@ function worldPointToStoredVec3(worldPos) {
 }
 
 function storedVec3ToWorldPos(stored) {
-  var root = script.markersRoot;
+  var root = getPinStoreCoordinateRoot();
   if (root && !isNull(root)) {
     var mat = root.getTransform().getWorldTransform();
     return mat.multiplyPoint(stored);
@@ -629,6 +848,9 @@ function rebuildAllMarkersFromStore() {
     if (k.indexOf(PIN_KEY_PREFIX) === 0) {
       applyMarkerKey(k);
     }
+  }
+  if (pinCollidersMutedForSidebarUi) {
+    applyPinColliderOcclusionForSidebar(true);
   }
 }
 
@@ -671,23 +893,109 @@ function applyMarkerKey(key) {
   upsertMarkerScene(data);
 }
 
+function setCollidersEnabledOnSubtree(so, enabled) {
+  if (!so || isNull(so)) {
+    return;
+  }
+  try {
+    var c1 = so.getComponent("Physics.ColliderComponent");
+    if (c1 && !isNull(c1)) {
+      c1.enabled = enabled;
+    }
+  } catch (e0) {}
+  try {
+    var c2 = so.getComponent("Component.ColliderComponent");
+    if (c2 && !isNull(c2)) {
+      c2.enabled = enabled;
+    }
+  } catch (e1) {}
+  var nc = so.getChildrenCount();
+  for (var i = 0; i < nc; i++) {
+    setCollidersEnabledOnSubtree(so.getChild(i), enabled);
+  }
+}
+
+function applyPinColliderOcclusionForSidebar(isSidebarOpen) {
+  pinCollidersMutedForSidebarUi = !!isSidebarOpen;
+  var wantColliders = !pinCollidersMutedForSidebarUi;
+  for (var id in markerById) {
+    if (!markerById.hasOwnProperty(id)) {
+      continue;
+    }
+    var m = markerById[id];
+    if (m && !isNull(m)) {
+      setCollidersEnabledOnSubtree(m, wantColliders);
+    }
+  }
+}
+
+function onSidebarOpenChangedForPinMeshOcclusion(isSidebarOpen) {
+  applyPinColliderOcclusionForSidebar(!!isSidebarOpen);
+}
+
 function upsertMarkerScene(data) {
   var id = data.id;
-  var worldPos = storedVec3ToWorldPos(new vec3(data.x, data.y, data.z));
+  var localVec = new vec3(data.x, data.y, data.z);
+  var coordRoot = script.pinStoreCoordinateRoot;
+  var useColocatedParent = coordRoot && !isNull(coordRoot);
   var so = markerById[id];
+  var isNewScene = false;
   if (!so || isNull(so)) {
     so = spawnPinObject();
     markerById[id] = so;
+    isNewScene = true;
   }
-  so.getTransform().setWorldPosition(worldPos);
+  var pinParent = getPinInstanceParent();
+  if (pinParent && !isNull(pinParent)) {
+    try {
+      so.setParent(pinParent);
+    } catch (ePar) {}
+  }
+  if (isNewScene) {
+    print(
+      "[Flaneur][net] Spawned pin scene object id=" + id +
+      " parent=" + (so.getParent() ? so.getParent().name : "?") +
+      " template=" + (script.pinTemplate && !isNull(script.pinTemplate) ? "yes" : "empty")
+    );
+  }
+  if (useColocatedParent) {
+    so.getTransform().setLocalPosition(localVec);
+  } else {
+    var worldPos = storedVec3ToWorldPos(localVec);
+    so.getTransform().setWorldPosition(worldPos);
+  }
+  if (script.logPinInputDebug) {
+    if (useColocatedParent) {
+      dbgPin(
+        "Pin local (store frame) " +
+          localVec.x +
+          ", " +
+          localVec.y +
+          ", " +
+          localVec.z +
+          " parent=" +
+          (so.getParent() ? so.getParent().name : "?")
+      );
+    } else {
+      var wp = storedVec3ToWorldPos(localVec);
+      dbgPin("Pin world pos " + wp.x + ", " + wp.y + ", " + wp.z + " parent=" + (so.getParent() ? so.getParent().name : "?"));
+    }
+  }
+  if (pinCollidersMutedForSidebarUi) {
+    setCollidersEnabledOnSubtree(so, false);
+  }
 }
 
 function spawnPinObject() {
-  var parent = getMarkersParent();
+  var parent = getPinInstanceParent();
+  var copyParent = getPinTemplateCopyParent();
   var template = script.pinTemplate;
   var so;
   if (template && !isNull(template)) {
-    so = parent.copySceneObject(template);
+    so = copyParent.copySceneObject(template);
+    try {
+      so.setParent(parent);
+    } catch (ePar) {}
   } else {
     so = scene.createSceneObject("FlaneurPin");
     so.setParent(parent);
@@ -830,6 +1138,7 @@ function publishPinDropGlobals() {
       return isTapOverPinDropUiBlocker(screenNorm);
     };
     global.flaneurCommitPinAtWorldPosition = commitPinAtWorldPosition;
+    global.flaneurPinNotifySidebarOpenChanged = onSidebarOpenChangedForPinMeshOcclusion;
   } catch (ePub) {}
 }
 
@@ -877,6 +1186,15 @@ function tryDropPinAtNormalizedScreen(screenNorm) {
     dbgPin("Skipped pin drop (tap on UI under Pin Drop UI Blocker Root).");
     return;
   }
+  try {
+    if (
+      typeof global.flaneurPinIsMeshPinSuppressedAfterSidebarClose === "function" &&
+      global.flaneurPinIsMeshPinSuppressedAfterSidebarClose()
+    ) {
+      dbgPin("Skipped pin drop (brief window after sidebar close).");
+      return;
+    }
+  } catch (eSupClose) {}
   if (
     script.pinDropFromGlobalScreenEvents === true &&
     (!script.pinDropUiBlockerRoot || isNull(script.pinDropUiBlockerRoot)) &&
@@ -947,7 +1265,7 @@ script.createEvent("TurnOnEvent").bind(function () {
   wirePinDropInteractionComponent();
   tryWireMultiplayerBackend();
   print(
-    "[Flaneur] Pin bridge: Spawn Object at World Mesh On Tap → flaneurPinIsScreenOverBlockerUi / flaneurCommitPinAtWorldPosition. TriggerPrimary pin drop is OFF by default (SIK). Tune Pin Drop World UI Block Screen Radius for head UI."
+    "[Flaneur] Pin bridge: flaneurPinIsScreenOverBlockerUi + flaneurCommitPinAtWorldPosition; optional Pin Drop UI Screen Space Camera; projection budget + radius for SIK."
   );
 });
 

@@ -1,0 +1,38 @@
+- !<ObjectPrefab/b5879633-ab81-4a6d-9eb7-0c0f4c064e65>
+  PackagePath: ""
+  objects:
+    - !<own> 243f0ae5-7ebd-46cb-a699-c0dcf90a65dc
+  LazyLoading: false
+  RetainAssets: true
+- !<ScriptComponent/23a20fe4-0706-4756-a249-3b9144f3987d>
+  PrefabRemaps:
+    []
+  Name: Connected Lenses - Multiplayer Session
+  Enabled: true
+  ScriptAsset: !<reference> ede2726b-d48b-42ab-ac25-cbdfe02812bd
+  ScriptInputsDefault:
+    {}
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      connectedLensModule: !<reference.ConnectedLensModule> a36fb029-f716-4bb1-ae29-8f14862e7ce3
+  ScriptTypes:
+    "":
+      {}
+- !<SceneObject/243f0ae5-7ebd-46cb-a699-c0dcf90a65dc>
+  PrefabRemaps:
+    - 23a20fe4-0706-4756-a249-3b9144f3987d: 23a20fe4-0706-4756-5db6-c46ebb0c6782
+    - 243f0ae5-7ebd-46cb-a699-c0dcf90a65dc: 243f0ae5-7ebd-46cb-5966-3f2306f59a23
+  Name: Connected Lenses - Multiplayer Session__PLACE_IN_SCENE
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 23a20fe4-0706-4756-a249-3b9144f3987d

@@ -37,8 +37,11 @@
     pinDropListenTriggerPrimary: false
     pinDropUiBlockerRoot: false
     pinDropUiBlockerRootExtra: false
+    pinDropUiScreenSpaceCamera: false
+    pinDropUiWorldProjectionSampleBudget: false
     pinDropUseWorldUiProjectionBlock: false
     pinDropWorldUiBlockScreenRadius: false
+    pinStoreCoordinateRoot: false
     pinTemplate: false
     placementDepth: false
     useSpectaclesSyncKit: false
@@ -54,6 +57,7 @@
   DefaultScriptInputs:
     - connectedLensModule: !<reference.ConnectedLensModule> 00000000-0000-0000-0000-000000000000
       markersRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinStoreCoordinateRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pinTemplate: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       placementDepth: !<float> 200.000000
@@ -69,6 +73,8 @@
       pinDropListenTriggerPrimary: false
       pinDropUseWorldUiProjectionBlock: true
       pinDropWorldUiBlockScreenRadius: 0.110000
+      pinDropUiWorldProjectionSampleBudget: 400
+      pinDropUiScreenSpaceCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
