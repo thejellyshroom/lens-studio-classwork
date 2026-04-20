@@ -39,7 +39,7 @@
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
   Children:
-    []
+    - !<own> d172fd2d-ca5f-4e21-996f-a9a0c9fc8671
   Components:
     - !<own> 00000000-0000-0065-0000-000000000065
     - !<own> 9dda2952-4001-491b-84ba-366e9d4db33f
@@ -6816,6 +6816,26 @@
   ScriptTypes:
     "":
       {}
+- !<RenderMeshVisual/2bdc37d0-f337-4424-8b49-1eab6e19549b>
+  PrefabRemaps:
+    []
+  Name: Render Mesh Visual
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> b7ec07ac-bc27-48df-b902-b8e455a3970b
+  Mesh: !<reference> a4055aa4-0221-4839-81ad-3d2546196327
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
 - !<ScriptComponent/2c884a30-a96c-479d-91e0-6be812df05f7>
   PrefabRemaps:
     []
@@ -18522,6 +18542,42 @@
     - !<own> 4263b8a1-b80b-4456-8a37-7e5c39a16e8a
   Components:
     []
+- !<Text3D/77b37d9f-c42c-4f24-a3e2-b07cba3a5f30>
+  PrefabRemaps:
+    []
+  Name: Text3D
+  Enabled: false
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> e34ab9e1-3770-4775-9b58-6483556a0266
+  Text: 3D Text
+  Editable: false
+  ShowEditingPreview: true
+  TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
+  SizeToFit: false
+  FontSize: 48
+  ExtrusionDepth: 0.400000
+  ExtrudeDirection: Both
+  Font: !<reference> 00000000-0000-0000-0000-000000000000
+  LayoutRect:
+    left: -7.500000
+    bottom: -2.250000
+    right: 7.500000
+    top: 2.250000
+  OverflowVertical: Overflow
+  OverflowHorizontal: Overflow
+  AdvancedLayout: !<TextAdvancedLayout>
+    ExtentsTarget: !<reference> 00000000-0000-0000-0000-000000000000
+    LetterSpacing: 0.000000
+    LineSpacing: 1.000000
+    CapitalizationOverride: None
+  EnableBatching: false
 - !<SceneObject/784f77b9-e3f2-4300-a4b3-4403e5e84357>
   PrefabRemaps:
     []
@@ -19048,6 +19104,51 @@
       startScreenBButton: !<MappingBased.AssignableType_4> 01a5d7d9-ebf3-4f65-96cc-3d9d65dc5724
       exitScreenAButton: !<MappingBased.AssignableType_5> 26521cc4-9295-403e-bd74-00f102234efe
       exitScreenBButton: !<MappingBased.AssignableType_6> 1b2f961d-7805-4570-aacc-a57d71450e10
+  ScriptTypes:
+    "":
+      {}
+- !<ScriptComponent/7c435b61-64f1-4558-8c09-cd26e5deba88>
+  PrefabRemaps:
+    []
+  Name: FlaneurPeerCompass
+  Enabled: true
+  ScriptAsset: !<reference> 9a624c64-8f44-4f00-9a1f-501f1092bfd1
+  ScriptInputsDefault:
+    reparentCompassMountToWorldCamera: true
+    applyHudPlacementFromScript: true
+    compassHudLocalZ: true
+    compassNeedleExtraEulerX: true
+    publishInterval: true
+    staleSeconds: true
+    limitCompassByDistance: true
+    maxWorldDistance: true
+    needleUniformScale: true
+    stackSpacing: true
+    peerCompassEnabled: true
+    compassBearingHorizontalOnly: true
+    logCompassDebug: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
+      compassMount: !<reference.SceneObject> d172fd2d-ca5f-4e21-996f-a9a0c9fc8671
+      needleTemplate: !<reference.SceneObject> c185cd07-6339-4145-8f68-490536627f82
+      reparentCompassMountToWorldCamera: true
+      applyHudPlacementFromScript: true
+      compassHudLocalX: !<float> 6.000000
+      compassHudLocalY: !<float> 10.000000
+      compassHudLocalZ: !<float> -42.000000
+      compassNeedleExtraEulerX: !<float> 90.000000
+      publishInterval: 0.200000
+      staleSeconds: !<float> 5.000000
+      limitCompassByDistance: false
+      maxWorldDistance: !<float> 250.000000
+      needleUniformScale: !<float> 4.000000
+      stackSpacing: !<float> 14.000000
+      peerCompassEnabled: true
+      compassBearingHorizontalOnly: false
+      logCompassDebug: false
   ScriptTypes:
     "":
       {}
@@ -24689,6 +24790,7 @@
     autoShareOnSoloConnect: true
     useSpectaclesSyncKit: true
     pinDropInteraction: true
+    logNetworkDebug: true
     capturePinPhotos: true
     pinDropFromGlobalScreenEvents: true
     editorTouchBlockingForPreview: true
@@ -24711,6 +24813,7 @@
       useSpectaclesSyncKit: true
       pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
       logPinInputDebug: true
+      logNetworkDebug: false
       capturePinPhotos: true
       pinDropFromGlobalScreenEvents: false
       editorTouchBlockingForPreview: false
@@ -31309,6 +31412,21 @@
     - !<own> 82d1ea33-ce5e-4684-9349-fac8b00c415c
   Components:
     []
+- !<SceneObject/c185cd07-6339-4145-8f68-490536627f82>
+  PrefabRemaps:
+    []
+  Name: Cone
+  Enabled: false
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 4.000000}
+    Rotation: {x: 90.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.100000, y: 0.100000, z: 0.100000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 2bdc37d0-f337-4424-8b49-1eab6e19549b
 - !<SceneObject/c20f7406-782a-4e84-8323-d6622b4ec948>
   PrefabRemaps:
     []
@@ -33015,6 +33133,7 @@
     []
   Components:
     - !<own> a0a286c2-34f5-4e4d-9578-0d8ebad3e58c
+    - !<own> 7c435b61-64f1-4558-8c09-cd26e5deba88
 - !<SceneObject/cd5f8ba0-151c-4924-a4b2-069229402c6e>
   PrefabRemaps:
     []
@@ -33934,6 +34053,21 @@
     - !<own> 33437ca2-fc5b-4cb9-8357-9566d8cedfb6
   Components:
     []
+- !<SceneObject/d172fd2d-ca5f-4e21-996f-a9a0c9fc8671>
+  PrefabRemaps:
+    []
+  Name: Compass
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 10.000000, y: 10.000000, z: 10.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> c185cd07-6339-4145-8f68-490536627f82
+  Components:
+    - !<own> 77b37d9f-c42c-4f24-a3e2-b07cba3a5f30
 - !<SceneObject/d198cff2-eb1a-4a29-884e-b0a3a63f120e>
   PrefabRemaps:
     []

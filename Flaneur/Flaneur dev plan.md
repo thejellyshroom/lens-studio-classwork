@@ -1,6 +1,8 @@
 Jessica Sheng  
 ACAD-207
 
+**Lens Studio build status (engineering):** See [`Flaneur-implementation-tracker.md`](Flaneur-implementation-tracker.md) for what is implemented in the project versus this creative spec (Connected Lens / RealtimeStore pins, Spectacles Sync Kit, social UI, remote toasts). This document stays product- and course-oriented; the tracker is the source of truth for code milestones.
+
 Notes:  
 People number for clustering  
 Location marker for image pins

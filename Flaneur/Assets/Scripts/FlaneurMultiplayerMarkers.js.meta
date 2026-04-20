@@ -30,6 +30,7 @@
     capturePinPhotos: false
     connectedLensModule: false
     editorTouchBlockingForPreview: false
+    logNetworkDebug: false
     logPinInputDebug: false
     markersRoot: false
     pinDropFromGlobalScreenEvents: false
@@ -65,6 +66,7 @@
       useSpectaclesSyncKit: true
       pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
       logPinInputDebug: false
+      logNetworkDebug: false
       capturePinPhotos: true
       pinDropFromGlobalScreenEvents: false
       editorTouchBlockingForPreview: false

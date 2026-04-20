@@ -41,6 +41,7 @@
  * SPECTACLES PREVIEW (Lens Studio) + SIK:
  * Mouse goes through MouseInteractor → Interactables; global Tap/Touch on this script often never fires.
  * - Turn ON "Log Pin Input Debug" once to see which path (if any) receives input.
+ * - Turn ON "Log Network Debug" for RealtimeStore / pin-key / remote-toast trace logs (noisy).
  * - Assign "Pin Drop Interaction": any object with InteractionComponent + collider (e.g. full-screen UI Image
  *   under Orthographic Camera, or a large quad in world). That surface receives Preview clicks.
  * - Or double-tap in the Preview panel (DoubleTapEvent).
@@ -74,6 +75,7 @@
 // @input bool useSpectaclesSyncKit = true
 // @input Component.InteractionComponent pinDropInteraction
 // @input bool logPinInputDebug = false
+// @input bool logNetworkDebug = false
 // @input bool capturePinPhotos = true
 // @input bool pinDropFromGlobalScreenEvents = false
 // @input bool editorTouchBlockingForPreview = false
@@ -125,6 +127,14 @@ var localOriginatedPinIds = {};
 var remotePinDropToastSentForId = {};
 var pinDropToastPendingMsgs = [];
 var pinDropToastFlushEv = null;
+/** Appended to `peer:*` store id when `localConnectionId` is empty so dual preview panes don’t share one key. */
+var flaneurPeerCompassClientNonce = "";
+
+function dbgNet(msg) {
+  if (script.logNetworkDebug) {
+    print(msg);
+  }
+}
 
 function collectScreenTransformsUnder(so, outList) {
   if (!so || isNull(so)) {
@@ -262,7 +272,7 @@ function wireSpectaclesSyncKit(sc) {
   }
   syncKitWired = true;
   syncKitSc = sc;
-  print("[Flaneur] Using Spectacles Sync Kit SessionController (no duplicate createSession).");
+  dbgNet("[Flaneur] Using Spectacles Sync Kit SessionController (no duplicate createSession).");
   sc.onConnected.add(onSpectaclesSyncConnected);
   sc.onRealtimeStoreCreated.add(onRealtimeStoreCreated);
   sc.onRealtimeStoreUpdated.add(onRealtimeStoreUpdated);
@@ -359,11 +369,11 @@ function startReceiverStorePoll(sess) {
           ids.push(getStoreIdSafe(pollSession, pollSession.allRealtimeStores[i]) || "?");
         }
       }
-      print("[Flaneur][net] Poll waiting for flaneur store (" + (frames / 60).toFixed(0) + "s). stores=" + n + " ids=[" + ids.join(",") + "]");
+      dbgNet("[Flaneur][net] Poll waiting for flaneur store (" + (frames / 60).toFixed(0) + "s). stores=" + n + " ids=[" + ids.join(",") + "]");
     }
     try {
       if (tryBindExistingFlaneurStore(pollSession)) {
-        print("[Flaneur][net] Receiver: RealtimeStore appeared in session (poll bind).");
+        dbgNet("[Flaneur][net] Receiver: RealtimeStore appeared in session (poll bind).");
         stopReceiverStorePoll();
       }
     } catch (ePoll) {}
@@ -388,6 +398,7 @@ function onSpectaclesSyncDisconnected(sess, disconnectInfo) {
   localUserId = "";
   localConnectionId = "";
   localDisplayName = "";
+  flaneurPeerCompassClientNonce = "";
   try {
     if (typeof global !== "undefined") {
       global.flaneurPinApi = null;
@@ -545,7 +556,7 @@ function onStarterConnectedToMultiplayer(sess) {
   // If another client already created the store (dual preview where both sides think they
   // are host is common), bind that one instead of creating a duplicate.
   if (tryBindExistingFlaneurStore(sess)) {
-    print("[Flaneur][net] Host path: flaneur store already exists — bound existing.");
+    dbgNet("[Flaneur][net] Host path: flaneur store already exists — bound existing.");
     return;
   }
 
@@ -557,7 +568,7 @@ function onStarterConnectedToMultiplayer(sess) {
   opts.initialStore = GeneralDataStore.create();
 
   var onOk = function (store) {
-    print("[Flaneur][net] createRealtimeStore succeeded.");
+    dbgNet("[Flaneur][net] createRealtimeStore succeeded.");
     bindFlaneurStore(store);
   };
   var onErr = function (err) {
@@ -568,7 +579,7 @@ function onStarterConnectedToMultiplayer(sess) {
     }
   };
 
-  print("[Flaneur][net] Host path: creating flaneur store (" + FLANEUR_STORE_ID + ")…");
+  dbgNet("[Flaneur][net] Host path: creating flaneur store (" + FLANEUR_STORE_ID + ")…");
   if (syncKitSc && syncKitSc.createStore) {
     syncKitSc.createStore(opts, onOk, onErr);
   } else {
@@ -583,12 +594,12 @@ function onReceiverConnectedToMultiplayer(sess) {
       isHostFlag = syncKitSc.isHost();
     }
   } catch (eH) {}
-  print("[Flaneur][net] Receiver path entered (isHost=" + String(isHostFlag) + "). allRealtimeStores=" + ((sess && sess.allRealtimeStores) ? sess.allRealtimeStores.length : "?"));
+  dbgNet("[Flaneur][net] Receiver path entered (isHost=" + String(isHostFlag) + "). allRealtimeStores=" + ((sess && sess.allRealtimeStores) ? sess.allRealtimeStores.length : "?"));
   if (tryBindExistingFlaneurStore(sess)) {
     stopReceiverStorePoll();
     return;
   }
-  print("[Flaneur][net] Receiver connected; waiting for RealtimeStore (poll up to ~10s).");
+  dbgNet("[Flaneur][net] Receiver connected; waiting for RealtimeStore (poll up to ~10s).");
   startReceiverStorePoll(sess);
 }
 
@@ -624,6 +635,12 @@ function getFlaneurPinOwnerIdForStore() {
   return flaneurFallbackOwnerId;
 }
 
+function ensurePeerCompassClientNonce() {
+  if (!flaneurPeerCompassClientNonce) {
+    flaneurPeerCompassClientNonce = "p" + Math.floor(Math.random() * 1e9) + "t" + getTime().toFixed(4);
+  }
+}
+
 function publishGlobalApi() {
   try {
     if (typeof global === "undefined") {
@@ -641,11 +658,30 @@ function publishGlobalApi() {
       getLocalDisplayName: function () {
         return localDisplayName;
       },
+      /**
+       * Unique per Connected Lens **connection** (dual preview / Spectacles). Prefer for `peer:*` store keys.
+       * If `connectionId` is missing (common in Preview), appends a per-runtime nonce so two panes never
+       * overwrite a single `peer:<userId>` entry.
+       */
+      getPeerCompassStoreId: function () {
+        if (localConnectionId && String(localConnectionId).length > 0) {
+          return String(localConnectionId);
+        }
+        ensurePeerCompassClientNonce();
+        return String(getFlaneurPinOwnerIdForStore()) + "~" + flaneurPeerCompassClientNonce;
+      },
       isScreenOverBlockerUi: function (n) {
         refreshPinDropUiBlockers();
         return isTapOverPinDropUiBlocker(n);
       },
       commitPinAtWorldPosition: commitPinAtWorldPosition,
+      /** Same space as pin keys when `pinStoreCoordinateRoot` is set (e.g. ColocatedWorld). */
+      worldPointToStored: function (worldPos) {
+        return worldPointToStoredVec3(worldPos);
+      },
+      storedPointToWorld: function (storedVec3) {
+        return storedVec3ToWorldPos(storedVec3);
+      },
     };
     publishPinDropGlobals();
   } catch (e) {}
@@ -673,6 +709,7 @@ function bindFlaneurStore(store) {
   // storeId (Connected Lens / Sync Kit can hand a poll-bound handle, then a second
   // handle from onRealtimeStoreCreated). Updates are delivered on the canonical ref —
   // if we keep the stale one, `store !== flaneurStore` drops every remote key update.
+  var hadPreviousBoundStore = !!(flaneurStore && !isNull(flaneurStore));
   flaneurStore = store;
   stopReceiverStorePoll();
   var nKeys = -1;
@@ -680,8 +717,21 @@ function bindFlaneurStore(store) {
     var ks = flaneurStore.getAllKeys();
     nKeys = ks ? ks.length : 0;
   } catch (eK) {}
-  print("[Flaneur][net] RealtimeStore bound: " + FLANEUR_STORE_ID + (nKeys >= 0 ? " (" + nKeys + " existing keys) — rebuilding markers." : "."));
-  rebuildAllMarkersFromStore();
+  if (hadPreviousBoundStore) {
+    dbgNet(
+      "[Flaneur][net] RealtimeStore repointed: " +
+        FLANEUR_STORE_ID +
+        (nKeys >= 0 ? " (" + nKeys + " keys) — soft-resync pins (keep SceneObjects)." : " — soft-resync pins.")
+    );
+    resyncPinMarkersFromStoreWithoutClear();
+  } else {
+    dbgNet(
+      "[Flaneur][net] RealtimeStore bound: " +
+        FLANEUR_STORE_ID +
+        (nKeys >= 0 ? " (" + nKeys + " existing keys) — rebuilding markers." : ".")
+    );
+    rebuildAllMarkersFromStore();
+  }
   publishGlobalApi();
   refreshLocalDisplayNameFromSession();
 }
@@ -706,7 +756,7 @@ function onRealtimeStoreCreated(sess, store, userInfo, creationInfo) {
   if (!sid) {
     sid = getStoreIdSafe(sess, store);
   }
-  print("[Flaneur][net] onRealtimeStoreCreated storeId=" + sid + " by=" + (userInfo && userInfo.displayName ? userInfo.displayName : "?"));
+  dbgNet("[Flaneur][net] onRealtimeStoreCreated storeId=" + sid + " by=" + (userInfo && userInfo.displayName ? userInfo.displayName : "?"));
   if (sid === FLANEUR_STORE_ID) {
     bindFlaneurStore(store);
   }
@@ -718,7 +768,7 @@ function onRealtimeStoreUpdated(sess, store, key, updateInfo) {
   }
   var sidUp = getStoreIdSafe(sess, store);
   if (sidUp === FLANEUR_STORE_ID && store !== flaneurStore) {
-    print("[Flaneur][net] Flaneur store handle changed — repointing from update (key=" + String(key) + ").");
+    dbgNet("[Flaneur][net] Flaneur store handle changed — repointing from update (key=" + String(key) + ").");
     bindFlaneurStore(store);
   }
   tryBindFlaneurStoreFromSessionIfNeeded(sess, store);
@@ -729,7 +779,7 @@ function onRealtimeStoreUpdated(sess, store, key, updateInfo) {
     return;
   }
   if (key.indexOf(PIN_KEY_PREFIX) === 0) {
-    print("[Flaneur][net] Store pin key update: " + key);
+    dbgNet("[Flaneur][net] Store pin key update: " + key);
     applyMarkerKey(key);
     maybeNotifyRemotePinDropFromStoreKey(key, updateInfo);
   }
@@ -766,6 +816,7 @@ function onRealtimeStoreDeleted(sess, store) {
   }
   clearAllMarkerObjects();
   flaneurFallbackOwnerId = "";
+  flaneurPeerCompassClientNonce = "";
   localOriginatedPinIds = {};
   remotePinDropToastSentForId = {};
   pinDropToastPendingMsgs = [];
@@ -851,7 +902,7 @@ function tryBindFlaneurStoreFromSessionIfNeeded(sess, store) {
     }
     var info = sess.getRealtimeStoreInfo(store);
     if (info && info.storeId === FLANEUR_STORE_ID) {
-      dbgPin("Bound RealtimeStore from onRealtimeStoreUpdated (joiner / late path).");
+      dbgNet("Bound RealtimeStore from onRealtimeStoreUpdated (joiner / late path).");
       bindFlaneurStore(store);
     }
   } catch (eBind) {}
@@ -903,6 +954,40 @@ function rebuildAllMarkersFromStore() {
     var k = keys[i];
     if (k.indexOf(PIN_KEY_PREFIX) === 0) {
       applyMarkerKey(k);
+    }
+  }
+  if (pinCollidersMutedForSidebarUi) {
+    applyPinColliderOcclusionForSidebar(true);
+  }
+}
+
+/**
+ * Same as iterating `applyMarkerKey` for all pin keys, but **without** destroying existing SceneObjects.
+ * Use when Connected Lens hands a **new GeneralDataStore handle** for the same logical store (common on
+ * every `onRealtimeStoreUpdated` in some builds) — full `rebuildAllMarkersFromStore` would clear `markerById`,
+ * recreate every pin, and flood pin-input debug logs.
+ */
+function resyncPinMarkersFromStoreWithoutClear() {
+  if (!flaneurStore) {
+    return;
+  }
+  var keys = flaneurStore.getAllKeys();
+  var seenIds = {};
+  var j;
+  for (j = 0; j < keys.length; j++) {
+    var k2 = keys[j];
+    if (k2.indexOf(PIN_KEY_PREFIX) !== 0) {
+      continue;
+    }
+    applyMarkerKey(k2);
+    seenIds[k2.substring(PIN_KEY_PREFIX.length)] = true;
+  }
+  for (var mid in markerById) {
+    if (!markerById.hasOwnProperty(mid)) {
+      continue;
+    }
+    if (!seenIds[mid]) {
+      removeMarkerForKey(PIN_KEY_PREFIX + mid);
     }
   }
   if (pinCollidersMutedForSidebarUi) {
@@ -1020,7 +1105,7 @@ function maybeNotifyRemotePinDropFromStoreKey(key, updateInfo) {
     return;
   }
   if (localOriginatedPinIds[data.id]) {
-    if (script.logPinInputDebug) {
+    if (script.logNetworkDebug) {
       print("[Flaneur][toast] skip (local pin id / photo refresh) pin=" + data.id);
     }
     return;
@@ -1038,7 +1123,7 @@ function maybeNotifyRemotePinDropFromStoreKey(key, updateInfo) {
   } else if (data.oid) {
     label = String(data.oid);
   }
-  if (script.logPinInputDebug) {
+  if (script.logNetworkDebug) {
     print("[Flaneur][toast] show remote pin=" + data.id + " label=" + label + " updaterClaimsLocal=" + updaterClaimsLocal);
   }
   emitPinDropToastForRemoteViewer(label + " dropped a pin!");
@@ -1121,7 +1206,7 @@ function upsertMarkerScene(data) {
     } catch (ePar) {}
   }
   if (isNewScene) {
-    print(
+    dbgNet(
       "[Flaneur][net] Spawned pin scene object id=" + id +
       " parent=" + (so.getParent() ? so.getParent().name : "?") +
       " template=" + (script.pinTemplate && !isNull(script.pinTemplate) ? "yes" : "empty")
@@ -1133,7 +1218,8 @@ function upsertMarkerScene(data) {
     var worldPos = storedVec3ToWorldPos(localVec);
     so.getTransform().setWorldPosition(worldPos);
   }
-  if (script.logPinInputDebug) {
+  // Log only when the marker is first created — store updates (e.g. photo `img` re-write) call here every time and would flood the console.
+  if (script.logPinInputDebug && isNewScene) {
     if (useColocatedParent) {
       dbgPin(
         "Pin local (store frame) " +
@@ -1336,7 +1422,7 @@ function wirePinDropInteractionComponent() {
     dbgPin("InteractionComponent.onTap");
     tryDropPinAtNormalizedScreen(args.position);
   });
-  print("[Flaneur] Pin drop wired to InteractionComponent (recommended for Spectacles Preview).");
+  dbgNet("[Flaneur] Pin drop wired to InteractionComponent (recommended for Spectacles Preview).");
 }
 
 function tryDropPinAtNormalizedScreen(screenNorm) {
@@ -1394,7 +1480,7 @@ function tryDropPinAtNormalizedScreen(screenNorm) {
 
 function bindGlobalScreenPinEventsIfEnabled() {
   if (script.pinDropFromGlobalScreenEvents !== true) {
-    print(
+    dbgNet(
       "[Flaneur] Pin drops: Interaction + TriggerPrimary; global Tap off (use Spawn Object at World Mesh On Tap + flaneur globals for mesh hits)."
     );
     return;
@@ -1411,7 +1497,7 @@ function bindGlobalScreenPinEventsIfEnabled() {
     dbgPin("DoubleTapEvent");
     tryDropPinAtNormalizedScreen(ev.getTapPosition());
   });
-  print(
+  dbgNet(
     "[Flaneur] Global screen pin events ON (depth placement). Prefer OFF when using Spawn Object at World Mesh On Tap."
   );
 }
@@ -1436,7 +1522,7 @@ script.createEvent("TurnOnEvent").bind(function () {
   wirePinDropInteractionComponent();
   tryWireMultiplayerBackend();
   flushPendingPinDropToasts();
-  print(
+  dbgNet(
     "[Flaneur] Pin bridge: flaneurPinIsScreenOverBlockerUi + flaneurCommitPinAtWorldPosition; optional Pin Drop UI Screen Space Camera; projection budget + radius for SIK."
   );
 });
