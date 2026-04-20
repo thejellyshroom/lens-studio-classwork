@@ -31,6 +31,7 @@
     headFollowUiRoot: false
     pinEntryPrefab: false
     sidebarBranchRoot: false
+    sidebarCloseIconTexture: false
     sidebarCountBadge: false
     sidebarFab: false
     sidebarListRoot: false
@@ -75,6 +76,7 @@
       sidebarBranchRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       sidebarListRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pinEntryPrefab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarCloseIconTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}

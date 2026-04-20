@@ -2658,6 +2658,7 @@
       sidebarBranchRoot: !<reference.SceneObject> 3c60aa6e-29f5-48fc-96c7-9f13914341c0
       sidebarListRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
       pinEntryPrefab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarCloseIconTexture: !<reference.Texture> 73b20c35-a336-410d-9897-bdca3d55577c
   ScriptTypes:
     "":
       {}
@@ -9416,7 +9417,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: -60.000000}
+    Position: {x: 0.000000, y: 0.000000, z: -20.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false

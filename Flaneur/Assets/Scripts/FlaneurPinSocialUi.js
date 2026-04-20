@@ -61,6 +61,8 @@
 // @input SceneObject sidebarBranchRoot
 // @input SceneObject sidebarListRoot
 // @input SceneObject pinEntryPrefab
+// @input Asset.Texture sidebarCloseIconTexture
+//     "Optional: assign Image.png (or an X icon). Forces Close → Image mainPass.baseTex at runtime if SIK/material loses the link."
 
 var sidebarOpen = false;
 var sidebarToggleBurstT = -999;
@@ -78,8 +80,6 @@ function shouldIgnoreSecondToggleInBurst() {
   return sidebarToggleBurstCount > 1;
 }
 var dynamicRows = [];
-var seenPinIds = {};
-var seenPinsSeeded = false;
 var toastHoldUntil = -1;
 var toastFading = false;
 var toastFadeT = 0;
@@ -112,35 +112,6 @@ function getFollowRoot() {
   return null;
 }
 
-function trySeedExistingPins() {
-  if (seenPinsSeeded) {
-    return;
-  }
-  var api = getApi();
-  if (!api || !api.getStore()) {
-    return;
-  }
-  seenPinsSeeded = true;
-  var st = api.getStore();
-  var keys = st.getAllKeys();
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    if (key.indexOf(api.pinPrefix) !== 0) {
-      continue;
-    }
-    var json = st.getString(key);
-    if (!json) {
-      continue;
-    }
-    try {
-      var d = JSON.parse(json);
-      if (d && d.id) {
-        seenPinIds[d.id] = true;
-      }
-    } catch (e) {}
-  }
-}
-
 function findNamed(so, name) {
   if (!so || isNull(so)) {
     return null;
@@ -156,6 +127,26 @@ function findNamed(so, name) {
     }
   }
   return null;
+}
+
+function applySidebarCloseIconFromInput() {
+  if (!script.sidebarCloseIconTexture || isNull(script.sidebarCloseIconTexture)) {
+    return;
+  }
+  if (!script.sidebarPanel || isNull(script.sidebarPanel)) {
+    return;
+  }
+  var closeSo = findNamed(script.sidebarPanel, "Close");
+  if (!closeSo || isNull(closeSo)) {
+    return;
+  }
+  var img = closeSo.getComponent("Component.Image");
+  if (!img || isNull(img)) {
+    return;
+  }
+  try {
+    img.mainPass.baseTex = script.sidebarCloseIconTexture;
+  } catch (eCloseTex) {}
 }
 
 function getApi() {
@@ -493,14 +484,8 @@ function onStoreKeyUpdated(key) {
   if (!data || !data.id) {
     return;
   }
-  var isNew = !seenPinIds[data.id];
-  if (isNew) {
-    seenPinIds[data.id] = true;
-    var me = api.getLocalUserId();
-    if (data.oid && me && data.oid !== me) {
-      showToast((data.name || "Someone") + " dropped a pin!");
-    }
-  }
+  // Pin-drop head toast is handled in FlaneurMultiplayerMarkers (store update path) so it
+  // never depends on this script’s TurnOn order or a pre-seed of “seen” ids.
   if (sidebarOpen) {
     rebuildPinList();
   }
@@ -631,7 +616,6 @@ function wireSidebarToggle() {
 }
 
 script.createEvent("UpdateEvent").bind(function (ev) {
-  trySeedExistingPins();
   var dt = 1 / 60;
   try {
     if (ev && ev.getDeltaTime) {
@@ -665,6 +649,7 @@ script.createEvent("TurnOnEvent").bind(function () {
     script.toastAnchor.enabled = false;
   }
   wireSidebarToggle();
+  applySidebarCloseIconFromInput();
   updatePinCountBadge();
   print(
     "[Flaneur][UI] Social UI on. SIK needs SpectaclesInteractionKit.prefab in scene (MouseInteractor + hands). Then RoundButton: onValueChanged → flaneurSidebarSetOpen OR triggerUp → flaneurToggleSidebar only; world UI: Ignore Interaction Plane on Interactables; markers: Editor Touch Blocking OFF."

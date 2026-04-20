@@ -104,6 +104,8 @@ options.onRealtimeStoreKeyRemoved = onRealtimeStoreKeyRemoved;
 var session;
 var flaneurStore;
 var localUserId = "";
+/** Same session as `UserInfo.connectionId` — reliable for “who wrote this store key”. */
+var localConnectionId = "";
 var localDisplayName = "";
 var markerById = {};
 var syncKitSc = null;
@@ -115,6 +117,14 @@ var pinDropUiBlockerRects = [];
 var pinDropUiBlockerWorldPoints = [];
 var pinDropUiBlockerWarned = false;
 var pinCollidersMutedForSidebarUi = false;
+/** When Connected Lens user id is not ready yet, pins still need a *per-client* oid for sync + toasts. */
+var flaneurFallbackOwnerId = "";
+/** Pin ids written from this client (commit + photo refresh). Dual preview can reuse the same `userId` on both panes — oid matching would wrongly skip remote toasts. */
+var localOriginatedPinIds = {};
+/** One head toast per pin id for *other* users' drops (lives in markers so it never depends on Social UI TurnOn / seed). */
+var remotePinDropToastSentForId = {};
+var pinDropToastPendingMsgs = [];
+var pinDropToastFlushEv = null;
 
 function collectScreenTransformsUnder(so, outList) {
   if (!so || isNull(so)) {
@@ -261,25 +271,42 @@ function wireSpectaclesSyncKit(sc) {
   sc.onDisconnected.add(onSpectaclesSyncDisconnected);
 }
 
+function applyLocalUserInfoFromSession(info) {
+  if (!info) {
+    return;
+  }
+  if (info.userId) {
+    localUserId = info.userId;
+  }
+  if (info.connectionId) {
+    localConnectionId = info.connectionId;
+  }
+  if (info.displayName) {
+    localDisplayName = info.displayName;
+  }
+  publishGlobalApi();
+}
+
 function onSpectaclesSyncConnected(s, connectionInfo) {
   session = s;
-  if (connectionInfo && connectionInfo.localUserInfo && connectionInfo.localUserInfo.displayName) {
-    localDisplayName = connectionInfo.localUserInfo.displayName;
+  if (connectionInfo && connectionInfo.localUserInfo) {
+    applyLocalUserInfoFromSession(connectionInfo.localUserInfo);
   }
   var sc = getSessionController();
   if (sc && sc.getLocalUserId) {
-    localUserId = sc.getLocalUserId() || "";
+    localUserId = sc.getLocalUserId() || localUserId;
+    publishGlobalApi();
   } else {
     s.getLocalUserId(function (uid) {
-      localUserId = uid;
+      if (uid) {
+        localUserId = uid;
+        publishGlobalApi();
+      }
     });
   }
   try {
     s.getLocalUserInfo(function (info) {
-      if (info && info.displayName) {
-        localDisplayName = info.displayName;
-        publishGlobalApi();
-      }
+      applyLocalUserInfoFromSession(info);
     });
   } catch (e) {}
   // Only strict true is the store creator. Anything else (false **or** undefined) must
@@ -346,9 +373,20 @@ function startReceiverStorePoll(sess) {
 function onSpectaclesSyncDisconnected(sess, disconnectInfo) {
   stopReceiverStorePoll();
   clearAllMarkerObjects();
+  flaneurFallbackOwnerId = "";
+  localOriginatedPinIds = {};
+  remotePinDropToastSentForId = {};
+  pinDropToastPendingMsgs = [];
+  if (pinDropToastFlushEv) {
+    try {
+      script.removeEvent(pinDropToastFlushEv);
+    } catch (eRm) {}
+    pinDropToastFlushEv = null;
+  }
   flaneurStore = null;
   session = null;
   localUserId = "";
+  localConnectionId = "";
   localDisplayName = "";
   try {
     if (typeof global !== "undefined") {
@@ -469,18 +507,18 @@ function onSessionCreated(sess, sessionCreationType) {
 function onConnected(sess, connectionInfo) {
   session = sess;
 
-  if (connectionInfo && connectionInfo.localUserInfo && connectionInfo.localUserInfo.displayName) {
-    localDisplayName = connectionInfo.localUserInfo.displayName;
+  if (connectionInfo && connectionInfo.localUserInfo) {
+    applyLocalUserInfoFromSession(connectionInfo.localUserInfo);
   }
   session.getLocalUserId(function (userId) {
-    localUserId = userId;
+    if (userId) {
+      localUserId = userId;
+      publishGlobalApi();
+    }
   });
   try {
     session.getLocalUserInfo(function (info) {
-      if (info && info.displayName) {
-        localDisplayName = info.displayName;
-        publishGlobalApi();
-      }
+      applyLocalUserInfoFromSession(info);
     });
   } catch (e) {}
 
@@ -576,6 +614,16 @@ function tryBindExistingFlaneurStore(sess) {
   return false;
 }
 
+function getFlaneurPinOwnerIdForStore() {
+  if (localUserId && String(localUserId).length > 0) {
+    return String(localUserId);
+  }
+  if (!flaneurFallbackOwnerId) {
+    flaneurFallbackOwnerId = "c_" + Math.floor(Math.random() * 1e9) + "_" + getTime().toFixed(4);
+  }
+  return flaneurFallbackOwnerId;
+}
+
 function publishGlobalApi() {
   try {
     if (typeof global === "undefined") {
@@ -588,7 +636,7 @@ function publishGlobalApi() {
       pinPrefix: PIN_KEY_PREFIX,
       reactPrefix: REACT_KEY_PREFIX,
       getLocalUserId: function () {
-        return localUserId;
+        return getFlaneurPinOwnerIdForStore();
       },
       getLocalDisplayName: function () {
         return localDisplayName;
@@ -609,10 +657,7 @@ function refreshLocalDisplayNameFromSession() {
   }
   try {
     session.getLocalUserInfo(function (info) {
-      if (info && info.displayName) {
-        localDisplayName = info.displayName;
-        publishGlobalApi();
-      }
+      applyLocalUserInfoFromSession(info);
     });
   } catch (e) {}
 }
@@ -686,6 +731,7 @@ function onRealtimeStoreUpdated(sess, store, key, updateInfo) {
   if (key.indexOf(PIN_KEY_PREFIX) === 0) {
     print("[Flaneur][net] Store pin key update: " + key);
     applyMarkerKey(key);
+    maybeNotifyRemotePinDropFromStoreKey(key, updateInfo);
   }
   try {
     if (typeof global !== "undefined" && global.flaneurPinStoreKeyUpdated) {
@@ -719,6 +765,16 @@ function onRealtimeStoreDeleted(sess, store) {
     return;
   }
   clearAllMarkerObjects();
+  flaneurFallbackOwnerId = "";
+  localOriginatedPinIds = {};
+  remotePinDropToastSentForId = {};
+  pinDropToastPendingMsgs = [];
+  if (pinDropToastFlushEv) {
+    try {
+      script.removeEvent(pinDropToastFlushEv);
+    } catch (eRm2) {}
+    pinDropToastFlushEv = null;
+  }
   flaneurStore = null;
   try {
     if (typeof global !== "undefined") {
@@ -873,6 +929,119 @@ function removeMarkerForKey(key) {
     so.destroy();
   }
   delete markerById[id];
+}
+
+function flushPendingPinDropToasts() {
+  if (!pinDropToastPendingMsgs.length) {
+    return;
+  }
+  if (typeof global === "undefined" || !global.flaneurPinShowToast) {
+    return;
+  }
+  var batch = pinDropToastPendingMsgs;
+  pinDropToastPendingMsgs = [];
+  for (var i = 0; i < batch.length; i++) {
+    try {
+      global.flaneurPinShowToast(batch[i]);
+    } catch (eF) {}
+  }
+}
+
+function ensurePinDropToastFlushLoop() {
+  if (pinDropToastFlushEv) {
+    return;
+  }
+  var frames = 0;
+  pinDropToastFlushEv = script.createEvent("UpdateEvent");
+  pinDropToastFlushEv.bind(function () {
+    frames++;
+    flushPendingPinDropToasts();
+    if (!pinDropToastPendingMsgs.length || frames > 480) {
+      if (frames > 480) {
+        pinDropToastPendingMsgs = [];
+      }
+      script.removeEvent(pinDropToastFlushEv);
+      pinDropToastFlushEv = null;
+    }
+  });
+}
+
+function emitPinDropToastForRemoteViewer(msg) {
+  try {
+    if (typeof global !== "undefined" && global.flaneurPinShowToast) {
+      global.flaneurPinShowToast(msg);
+      return;
+    }
+  } catch (e0) {}
+  pinDropToastPendingMsgs.push(msg);
+  ensurePinDropToastFlushLoop();
+}
+
+/**
+ * @returns {boolean|null} true if updater is this client, false if another client, null if unknown
+ */
+function isLocalRealtimeStoreUpdater(updateInfo) {
+  if (!updateInfo || !updateInfo.updaterInfo) {
+    return null;
+  }
+  var u = updateInfo.updaterInfo;
+  try {
+    if (localConnectionId && u.connectionId && localConnectionId === u.connectionId) {
+      return true;
+    }
+    if (localUserId && u.userId && String(localUserId) === String(u.userId)) {
+      return true;
+    }
+  } catch (eUp) {}
+  return false;
+}
+
+/**
+ * Called from `onRealtimeStoreUpdated` only — toast for remote drops.
+ * Do **not** skip based on `updateInfo.updaterInfo`: dual preview / Sync Kit often reports the local
+ * connection as the updater for every key write. Skips only when this client originated the pin id
+ * (`localOriginatedPinIds`, set before `putString`).
+ */
+function maybeNotifyRemotePinDropFromStoreKey(key, updateInfo) {
+  if (!flaneurStore || typeof key !== "string" || key.indexOf(PIN_KEY_PREFIX) !== 0) {
+    return;
+  }
+  var json = flaneurStore.getString(key);
+  if (!json) {
+    return;
+  }
+  var data;
+  try {
+    data = JSON.parse(json);
+  } catch (eJ) {
+    return;
+  }
+  if (!data || !data.id) {
+    return;
+  }
+  if (localOriginatedPinIds[data.id]) {
+    if (script.logPinInputDebug) {
+      print("[Flaneur][toast] skip (local pin id / photo refresh) pin=" + data.id);
+    }
+    return;
+  }
+  if (remotePinDropToastSentForId[data.id]) {
+    return;
+  }
+  remotePinDropToastSentForId[data.id] = true;
+  var updaterClaimsLocal = isLocalRealtimeStoreUpdater(updateInfo) === true;
+  var label = "Someone";
+  if (!updaterClaimsLocal && updateInfo && updateInfo.updaterInfo && updateInfo.updaterInfo.displayName) {
+    label = updateInfo.updaterInfo.displayName;
+  } else if (data.name) {
+    label = data.name;
+  } else if (data.oid) {
+    label = String(data.oid);
+  }
+  if (script.logPinInputDebug) {
+    print("[Flaneur][toast] show remote pin=" + data.id + " label=" + label + " updaterClaimsLocal=" + updaterClaimsLocal);
+  }
+  emitPinDropToastForRemoteViewer(label + " dropped a pin!");
 }
 
 function applyMarkerKey(key) {
@@ -1107,16 +1276,18 @@ function commitPinAtWorldPosition(worldVec3) {
   }
   lastPinWallTime = t;
   var stored = worldPointToStoredVec3(worldVec3);
+  var ownerId = getFlaneurPinOwnerIdForStore();
   var rec = {
     id: makePinId(),
-    oid: localUserId || "local",
-    name: localDisplayName || localUserId || "Player",
+    oid: ownerId,
+    name: localDisplayName || localUserId || ownerId || "Player",
     img: "",
     x: stored.x,
     y: stored.y,
     z: stored.z,
     t: t,
   };
+  localOriginatedPinIds[rec.id] = true;
   upsertPinInStore(rec);
   upsertMarkerScene(rec);
   dbgPin("Committed pin " + rec.id);
@@ -1264,6 +1435,7 @@ script.createEvent("TurnOnEvent").bind(function () {
   tryEnableEditorTouchForLens();
   wirePinDropInteractionComponent();
   tryWireMultiplayerBackend();
+  flushPendingPinDropToasts();
   print(
     "[Flaneur] Pin bridge: flaneurPinIsScreenOverBlockerUi + flaneurCommitPinAtWorldPosition; optional Pin Drop UI Screen Space Camera; projection budget + radius for SIK."
   );
