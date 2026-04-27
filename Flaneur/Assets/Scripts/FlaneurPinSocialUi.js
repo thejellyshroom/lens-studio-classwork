@@ -33,8 +33,11 @@
  *    (e.g. the empty named Sidebar above the panel). Open/close then toggles that root so the list can appear. While the
  *    sidebar is open, **FlaneurMultiplayerMarkers** temporarily disables **pin colliders** so SIK rays hit the panel/close
  *    button instead of pins in front of the UI.
- * 5) List root — Empty child under the panel where cloned rows parent. Assign "Sidebar List Root".
- * 6) Row prefab — Disabled template with children: PinPhoto (Image), PinName (Text), PinReacts (Text),
+ * 5) List root — SceneObject that owns the Spectacles UIKit **GridLayout** (typically **Sidebar → Content → GridLayout**).
+ *    Assign "Sidebar List Root" to that GridLayout object (not the head-follow UI root). If it matches **Head Follow UI Root**
+ *    by mistake, the script falls back to the first child named **GridLayout** under **Sidebar Panel**.
+ * 6) Row prefab — Disabled template with children: **PinPhoto** (Image) and **PinName** (Text), or **Logo** (Image) + **Name** (Text).
+ *    Optional: PinReacts (Text), React0 / React1 / React2 (InteractionComponent).
  *    React0 / React1 / React2 (each with InteractionComponent).
  * 7) "World Camera" = same AR camera as FlaneurMultiplayerMarkers.
  *
@@ -62,6 +65,7 @@
 // @input SceneObject sidebarListRoot
 // @input SceneObject pinEntryPrefab
 // @input Asset.Texture sidebarCloseIconTexture
+// @input bool logUiDebug = false
 //     "Optional: assign Image.png (or an X icon). Forces Close → Image mainPass.baseTex at runtime if SIK/material loses the link."
 
 var sidebarOpen = false;
@@ -87,6 +91,52 @@ var toastFadeT = 0;
 var followPrevCamPos = null;
 var followPrevCamFwdH = null;
 var followHasPrev = false;
+
+var dbgUiLastT = -999;
+var dbgUiBurst = 0;
+
+// Coalesce rebuilds to avoid flicker (store often fires bursts of updates).
+var pinListRebuildQueued = false;
+var pinListRebuildQueuedAtT = -999;
+function dbgUi(msg) {
+  var on = !!script.logUiDebug;
+  if (!on) {
+    try {
+      if (global.deviceInfoSystem && global.deviceInfoSystem.isEditor && global.deviceInfoSystem.isEditor()) {
+        on = true;
+      }
+    } catch (eEdDbg) {}
+  }
+  if (!on) return;
+  // Rate limit to avoid peer:* spam drowning pin logs.
+  var t = getTime();
+  if (t - dbgUiLastT > 0.25) {
+    dbgUiLastT = t;
+    dbgUiBurst = 0;
+  }
+  dbgUiBurst++;
+  if (dbgUiBurst > 6) {
+    return;
+  }
+  print("[Flaneur][UI] " + msg);
+}
+
+function requestPinListRebuild(reason) {
+  if (!sidebarOpen) {
+    return;
+  }
+  var now = getTime();
+  // If we already queued a rebuild very recently, ignore duplicates.
+  if (pinListRebuildQueued && now - pinListRebuildQueuedAtT < 0.1) {
+    return;
+  }
+  pinListRebuildQueued = true;
+  pinListRebuildQueuedAtT = now;
+  runNextFrame(function () {
+    pinListRebuildQueued = false;
+    rebuildPinListImmediate(reason || "queued");
+  });
+}
 
 function clamp01(x) {
   if (x < 0) {
@@ -127,6 +177,451 @@ function findNamed(so, name) {
     }
   }
   return null;
+}
+
+function findNamedCaseInsensitive(so, nameLower) {
+  if (!so || isNull(so) || !nameLower) {
+    return null;
+  }
+  if (so.name && String(so.name).toLowerCase() === nameLower) {
+    return so;
+  }
+  var n = so.getChildrenCount();
+  for (var i = 0; i < n; i++) {
+    var f = findNamedCaseInsensitive(so.getChild(i), nameLower);
+    if (f) {
+      return f;
+    }
+  }
+  return null;
+}
+
+function findNamedFuzzy(so, nameLower) {
+  if (!so || isNull(so) || !nameLower) {
+    return null;
+  }
+  try {
+    if (so.name) {
+      var nm = String(so.name).toLowerCase();
+      // copySceneObject can produce names like "Name (1)" or "Logo(Clone)"
+      if (nm === nameLower || nm.indexOf(nameLower) === 0) {
+        return so;
+      }
+    }
+  } catch (eNm) {}
+  var n = 0;
+  try {
+    n = so.getChildrenCount();
+  } catch (eN) {
+    n = 0;
+  }
+  for (var i = 0; i < n; i++) {
+    var f = findNamedFuzzy(so.getChild(i), nameLower);
+    if (f) {
+      return f;
+    }
+  }
+  return null;
+}
+
+/** Depth-first: first component of type on self, then children (handles Image/Text on nested objects). */
+function findFirstComponentDeep(so, primaryType, altType) {
+  if (!so || isNull(so)) {
+    return null;
+  }
+  var c = so.getComponent(primaryType);
+  if (!c && altType) {
+    c = so.getComponent(altType);
+  }
+  if (c) {
+    return c;
+  }
+  var n = so.getChildrenCount();
+  for (var i = 0; i < n; i++) {
+    var found = findFirstComponentDeep(so.getChild(i), primaryType, altType);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
+
+function normalizeStoreImageBase64(s) {
+  if (!s || typeof s !== "string") {
+    return "";
+  }
+  var i = s.indexOf("base64,");
+  if (i >= 0) {
+    return s.substring(i + 7);
+  }
+  return s;
+}
+
+function pinRowDisplayName(data) {
+  if (!data) {
+    return "Player";
+  }
+  var raw =
+    data.name != null && String(data.name).length > 0
+      ? data.name
+      : data.Name != null && String(data.Name).length > 0
+        ? data.Name
+        : data.displayName != null && String(data.displayName).length > 0
+          ? data.displayName
+          : data.oid != null && String(data.oid).length > 0
+            ? data.oid
+            : null;
+  if (raw != null) {
+    return String(raw);
+  }
+  return "Player";
+}
+
+function sceneObjectSelfOrAncestorNameMatches(so, namesLower) {
+  var cur = so;
+  while (cur && !isNull(cur)) {
+    var nm = cur.name ? String(cur.name).toLowerCase() : "";
+    for (var i = 0; i < namesLower.length; i++) {
+      if (nm === namesLower[i]) {
+        return true;
+      }
+    }
+    cur = cur.getParent();
+  }
+  return false;
+}
+
+function eachTextComponentUnder(root, visitFn) {
+  if (!root || isNull(root) || !visitFn) {
+    return;
+  }
+  var types = ["Component.Text", "Text"];
+  for (var t = 0; t < types.length; t++) {
+    try {
+      var arr = root.getComponents(types[t]);
+      if (arr && arr.length) {
+        for (var i = 0; i < arr.length; i++) {
+          visitFn(arr[i]);
+        }
+      }
+    } catch (eG) {}
+  }
+  var n = root.getChildrenCount();
+  for (var j = 0; j < n; j++) {
+    eachTextComponentUnder(root.getChild(j), visitFn);
+  }
+}
+
+/**
+ * Pin rows often bundle UIKit + custom labels; strict findNamed("Name") fails if names differ after copy.
+ * Collect all Text under the row and prefer components under a "Name" / "PinName" hierarchy.
+ */
+function setAuthorTextOnPinRow(row, label) {
+  var texts = [];
+  eachTextComponentUnder(row, function (tx) {
+    if (!tx || isNull(tx)) {
+      return;
+    }
+    for (var d = 0; d < texts.length; d++) {
+      if (texts[d] === tx) {
+        return;
+      }
+    }
+    texts.push(tx);
+  });
+  var preferred = [];
+  var nameHints = ["name", "pinname", "author"];
+  for (var p = 0; p < texts.length; p++) {
+    var comp = texts[p];
+    var so = null;
+    try {
+      so = comp.getSceneObject();
+    } catch (eSo) {}
+    if (so && sceneObjectSelfOrAncestorNameMatches(so, nameHints)) {
+      preferred.push(comp);
+    }
+  }
+  var targets = preferred;
+  if (targets.length === 0) {
+    var nameRoot =
+      findNamed(row, "PinName") ||
+      findNamed(row, "Name") ||
+      findNamedCaseInsensitive(row, "pinname") ||
+      findNamedCaseInsensitive(row, "name");
+    if (nameRoot) {
+      var under = [];
+      eachTextComponentUnder(nameRoot, function (tx) {
+        if (!tx || isNull(tx)) {
+          return;
+        }
+        under.push(tx);
+      });
+      if (under.length > 0) {
+        targets = under;
+      }
+    }
+  }
+  if (targets.length === 0) {
+    targets = texts.length === 1 ? texts : [];
+  }
+  if (targets.length === 0 && texts.length > 0) {
+    targets = texts;
+  }
+  for (var k = 0; k < targets.length; k++) {
+    try {
+      targets[k].text = label;
+    } catch (eTxt) {}
+  }
+}
+
+/** Cloned rows often share one material; without a per-row clone, last decoded texture wins for every cell. */
+function applyTextureToPinRowImage(img, tex) {
+  if (!img || isNull(img) || !tex || isNull(tex)) {
+    return;
+  }
+  try {
+    var mat = img.mainMaterial.clone();
+    img.mainMaterial = mat;
+    mat.mainPass.baseTex = tex;
+  } catch (eClone) {
+    try {
+      img.mainPass.baseTex = tex;
+    } catch (ePass) {}
+  }
+}
+
+function setEnabledOnSubtree(so, enabled) {
+  if (!so || isNull(so)) {
+    return;
+  }
+  try {
+    so.enabled = !!enabled;
+  } catch (eEn) {}
+  var n = 0;
+  try {
+    n = so.getChildrenCount();
+  } catch (eN) {
+    n = 0;
+  }
+  for (var i = 0; i < n; i++) {
+    setEnabledOnSubtree(so.getChild(i), enabled);
+  }
+}
+
+function getAnyImageMaterialForDynamicRows() {
+  // Best-effort: reuse Close button's image material so dynamically created images render.
+  try {
+    if (script.sidebarPanel && !isNull(script.sidebarPanel)) {
+      var closeSo = findNamed(script.sidebarPanel, "Close");
+      if (closeSo && !isNull(closeSo)) {
+        var img = closeSo.getComponent("Component.Image");
+        if (img && !isNull(img) && img.mainMaterial) {
+          return img.mainMaterial;
+        }
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+function ensurePinRowVisuals(row) {
+  if (!row || isNull(row)) {
+    return { img: null, text: null };
+  }
+
+  // UIKit RectangleButton clones often only contain a Collider child. Ensure our own renderable children exist.
+  var imgSo =
+    findNamed(row, "PinPhoto") ||
+    findNamedFuzzy(row, "pinphoto") ||
+    findNamed(row, "Logo") ||
+    findNamedFuzzy(row, "logo");
+  var nameSo =
+    findNamed(row, "PinName") ||
+    findNamedFuzzy(row, "pinname") ||
+    findNamed(row, "Name") ||
+    findNamedFuzzy(row, "name");
+
+  if (!imgSo) {
+    imgSo = scene.createSceneObject("PinPhoto");
+    imgSo.setParent(row);
+    imgSo.getTransform().setLocalPosition(new vec3(-3.2, 0.0, 0.05));
+  }
+  if (!nameSo) {
+    nameSo = scene.createSceneObject("PinName");
+    nameSo.setParent(row);
+    nameSo.getTransform().setLocalPosition(new vec3(2.6, -0.9, 0.05));
+  }
+
+  var imgComp = imgSo.getComponent("Component.Image") || imgSo.getComponent("Image");
+  if (!imgComp) {
+    try {
+      imgComp = imgSo.createComponent("Component.Image");
+    } catch (eImgC) {}
+  }
+  if (imgComp && !imgComp.mainMaterial) {
+    var mat = getAnyImageMaterialForDynamicRows();
+    if (mat) {
+      try {
+        imgComp.mainMaterial = mat.clone();
+      } catch (eMat) {
+        try {
+          imgComp.mainMaterial = mat;
+        } catch (eMat2) {}
+      }
+    }
+  }
+
+  var textComp = nameSo.getComponent("Component.Text") || nameSo.getComponent("Text");
+  if (!textComp) {
+    try {
+      textComp = nameSo.createComponent("Component.Text");
+    } catch (eTxtC) {}
+  }
+  if (textComp) {
+    try {
+      // Defaults for dynamically created Text can be huge; match the PinEntry template intent.
+      textComp.sizeToFit = false;
+      textComp.fontSize = 28;
+      textComp.horizontalAlignment = HorizontalAlignment.Left;
+    } catch (eAlign) {}
+  }
+
+  // Make sure the two visuals render on top of the sidebar panel consistently.
+  try {
+    if (imgComp) {
+      imgComp.renderOrder = 60;
+    }
+  } catch (eRo1) {}
+  try {
+    if (textComp) {
+      textComp.renderOrder = 61;
+      textComp.depthTest = false;
+    }
+  } catch (eRo2) {}
+
+  setEnabledOnSubtree(imgSo, true);
+  setEnabledOnSubtree(nameSo, true);
+
+  return { img: imgComp, text: textComp };
+}
+
+function runNextFrame(fn) {
+  if (!fn) {
+    return;
+  }
+  var ev = script.createEvent("UpdateEvent");
+  ev.bind(function () {
+    try {
+      script.removeEvent(ev);
+    } catch (eRm) {}
+    fn();
+  });
+}
+
+/** Sidebar > Content > GridLayout, or explicit Sidebar List Root (must not be the head-follow UI root). */
+function getSidebarPinListParent() {
+  var root = script.sidebarListRoot;
+  var head = script.headFollowUiRoot;
+  if (root && !isNull(root) && head && !isNull(head) && root === head) {
+    root = null;
+  }
+  if ((!root || isNull(root)) && script.sidebarPanel && !isNull(script.sidebarPanel)) {
+    var gridSo = findNamed(script.sidebarPanel, "GridLayout");
+    if (gridSo && !isNull(gridSo)) {
+      return gridSo;
+    }
+  }
+  if (root && !isNull(root)) {
+    return root;
+  }
+  return null;
+}
+
+/** Spectacles UIKit GridLayout only runs layout() once on start; call again after adding row children. */
+function refreshSpectaclesGridLayout(gridSceneObject) {
+  if (!gridSceneObject || isNull(gridSceneObject)) {
+    return;
+  }
+  try {
+    var comps = gridSceneObject.getComponents("Component.ScriptComponent");
+    if (!comps) {
+      return;
+    }
+    var childCount = 0;
+    try {
+      childCount = gridSceneObject.getChildrenCount();
+    } catch (eCc) {
+      childCount = 0;
+    }
+    for (var i = 0; i < comps.length; i++) {
+      var c = comps[i];
+      if (c && typeof c.layout === "function") {
+        // If the GridLayout has a small fixed row count (e.g. 3), the scroll/content window can clip
+        // and it looks like "different" items show each open. Expand the layout to fit all children.
+        try {
+          if (typeof c.rows === "number") {
+            var cols = 1;
+            try {
+              if (typeof c.columns === "number" && isFinite(c.columns) && c.columns > 0) {
+                cols = Math.max(1, Math.floor(c.columns));
+              }
+            } catch (eCols) {}
+            // Ensure enough rows to include all children given current columns.
+            var neededRows = Math.max(1, Math.ceil(childCount / cols));
+            if (c.rows < neededRows) {
+              c.rows = neededRows;
+            }
+          }
+        } catch (eDim) {}
+        c.layout();
+        // GridLayout sets Z=0 on children; nudge forward + stable ordering to avoid depth fights / panel occlusion.
+        try {
+          var n = gridSceneObject.getChildrenCount();
+          for (var j = 0; j < n; j++) {
+            var ch = gridSceneObject.getChild(j);
+            if (!ch || isNull(ch)) continue;
+            try {
+              var tr = ch.getTransform();
+              var lp = tr.getLocalPosition();
+              lp.z = 0.2 + j * 0.001;
+              tr.setLocalPosition(lp);
+            } catch (eZ) {}
+            try {
+              ch.enabled = true;
+            } catch (eEn) {}
+          }
+        } catch (eKids) {}
+        return;
+      }
+    }
+  } catch (eGrid) {}
+}
+
+/**
+ * If the row template sits under the GridLayout, it still consumes a cell. Stash it under the head-follow UI root
+ * (disabled) so only spawned rows are grid children.
+ */
+function stashPinEntryPrefabOutsideGrid() {
+  var pref = script.pinEntryPrefab;
+  if (!pref || isNull(pref)) {
+    return;
+  }
+  var grid = getSidebarPinListParent();
+  if (!grid || isNull(grid)) {
+    return;
+  }
+  try {
+    var par = pref.getParent();
+    if (par !== grid) {
+      return;
+    }
+    var stash =
+      script.headFollowUiRoot && !isNull(script.headFollowUiRoot)
+        ? script.headFollowUiRoot
+        : script.getSceneObject();
+    pref.setParent(stash);
+    pref.enabled = false;
+  } catch (eStash) {}
 }
 
 function applySidebarCloseIconFromInput() {
@@ -367,24 +862,130 @@ function wireReactButton(so, pinId, kind) {
 }
 
 function setupPinRow(row, data, store, api) {
-  var nameSo = findNamed(row, "PinName");
-  if (nameSo) {
-    var nt = nameSo.getComponent("Component.Text");
-    if (nt) {
-      nt.text = data.name || data.oid || "Player";
-    }
+  // If the prefab is disabled in the hierarchy (template), some children can remain disabled after copy.
+  // Force-enable the entire row subtree so Text/Image components actually render.
+  setEnabledOnSubtree(row, true);
+  var visuals = ensurePinRowVisuals(row);
+
+  // Prefer exact Name/PinName nodes so we don't accidentally hit UIKit button labels.
+  var label = pinRowDisplayName(data);
+  dbgUi(
+    "setupPinRow id=" +
+      (data && data.id ? data.id : "?") +
+      " label=" +
+      label +
+      " imgLen=" +
+      (data && data.img ? String(data.img).length : 0)
+  );
+  var nameRoot =
+    findNamed(row, "PinName") ||
+    findNamed(row, "Name") ||
+    findNamedCaseInsensitive(row, "pinname") ||
+    findNamedCaseInsensitive(row, "name") ||
+    findNamedFuzzy(row, "pinname") ||
+    findNamedFuzzy(row, "name");
+  dbgUi(" nameRoot=" + (nameRoot ? nameRoot.name : "null") + " row=" + (row ? row.name : "?"));
+  // Quick structural check if we can't find expected children (kept small to avoid log spam).
+  if (!nameRoot) {
+    try {
+      var c0 = row && !isNull(row) ? row.getChildrenCount() : -1;
+      var names = [];
+      var lim = Math.min(c0, 8);
+      for (var i0 = 0; i0 < lim; i0++) {
+        var ch = row.getChild(i0);
+        names.push(ch ? ch.name : "?");
+      }
+      dbgUi(" row children=" + c0 + " first=" + names.join(", "));
+    } catch (eDump) {}
   }
-  var imgSo = findNamed(row, "PinPhoto");
-  if (imgSo && data.img) {
-    var img = imgSo.getComponent("Component.Image");
+  if (visuals && visuals.text) {
+    try {
+      visuals.text.text = label;
+      dbgUi(" set PinName text on ensured child OK");
+    } catch (eEnsName) {}
+  } else if (nameRoot) {
+    try {
+      var t0 = nameRoot.getComponent("Component.Text") || nameRoot.getComponent("Text");
+      if (t0) {
+        t0.text = label;
+        dbgUi(" set Name text direct OK");
+      } else {
+        setAuthorTextOnPinRow(nameRoot, label);
+        dbgUi(" set Name text deep OK");
+      }
+    } catch (eName0) {
+      setAuthorTextOnPinRow(nameRoot, label);
+      dbgUi(" set Name text deep (catch) OK");
+    }
+  } else {
+    setAuthorTextOnPinRow(row, label);
+    dbgUi(" set Name text row fallback OK");
+  }
+  // Confirm what the Name node currently displays (helps detect UIKit overwrites).
+  try {
+    var checkRoot =
+      findNamed(row, "PinName") ||
+      findNamed(row, "Name") ||
+      findNamedCaseInsensitive(row, "pinname") ||
+      findNamedCaseInsensitive(row, "name");
+    var checkText = checkRoot ? (checkRoot.getComponent("Component.Text") || checkRoot.getComponent("Text")) : null;
+    if (checkText) {
+      dbgUi(" Name node now='" + String(checkText.text) + "'");
+    } else {
+      dbgUi(" Name node has no Text component");
+    }
+  } catch (eCheck) {}
+  var rawImg = data && data.img != null ? String(data.img) : "";
+  var wantPlaceholder = false;
+  try {
+    if (global.deviceInfoSystem && global.deviceInfoSystem.isEditor && global.deviceInfoSystem.isEditor()) {
+      wantPlaceholder = true;
+    }
+  } catch (eEd) {}
+
+  if (rawImg.length > 0) {
+    var imgNode =
+      findNamed(row, "PinPhoto") ||
+      findNamed(row, "Logo") ||
+      findNamedCaseInsensitive(row, "pinphoto") ||
+      findNamedCaseInsensitive(row, "logo") ||
+      findNamedFuzzy(row, "pinphoto") ||
+      findNamedFuzzy(row, "logo");
+    var img = (visuals && visuals.img) ? visuals.img : (imgNode ? findFirstComponentDeep(imgNode, "Component.Image", "Image") : null);
+    if (!img) {
+      img = findFirstComponentDeep(row, "Component.Image", "Image");
+    }
     if (img) {
+      var payload = normalizeStoreImageBase64(rawImg);
       Base64.decodeTextureAsync(
-        data.img,
+        payload,
         function (tex) {
-          img.mainPass.baseTex = tex;
+          applyTextureToPinRowImage(img, tex);
+          dbgUi(" set row image from store OK");
         },
         function () {}
       );
+    } else {
+      dbgUi(" image node found but no Image component");
+    }
+  } else if (wantPlaceholder) {
+    // Editor can't capture stills; show any assigned texture as a placeholder (randomness not required yet).
+    var imgNode2 =
+      findNamed(row, "PinPhoto") ||
+      findNamed(row, "Logo") ||
+      findNamedCaseInsensitive(row, "pinphoto") ||
+      findNamedCaseInsensitive(row, "logo") ||
+      findNamedFuzzy(row, "pinphoto") ||
+      findNamedFuzzy(row, "logo");
+    var img2 = (visuals && visuals.img) ? visuals.img : (imgNode2 ? findFirstComponentDeep(imgNode2, "Component.Image", "Image") : null);
+    if (!img2) {
+      img2 = findFirstComponentDeep(row, "Component.Image", "Image");
+    }
+    if (img2 && script.sidebarCloseIconTexture && !isNull(script.sidebarCloseIconTexture)) {
+      applyTextureToPinRowImage(img2, script.sidebarCloseIconTexture);
+      dbgUi(" set row placeholder image OK");
+    } else {
+      dbgUi(" placeholder: missing Image component or sidebarCloseIconTexture not set");
     }
   }
   var rc = reactionCounts(store, api, data.id);
@@ -400,13 +1001,16 @@ function setupPinRow(row, data, store, api) {
   wireReactButton(findNamed(row, "React2"), data.id, 2);
 }
 
-function rebuildPinList() {
+function rebuildPinListImmediate(reason) {
   var api = getApi();
-  if (!api || !script.sidebarListRoot || isNull(script.sidebarListRoot)) {
+  var parent = getSidebarPinListParent();
+  if (!api || !parent || isNull(parent)) {
+    dbgUi("rebuildPinList: missing api/parent (api=" + (!!api) + " parent=" + (parent ? parent.name : "null") + ")");
     return;
   }
   var st = api.getStore();
   if (!st) {
+    dbgUi("rebuildPinList: no store yet");
     clearDynamicRows();
     return;
   }
@@ -415,7 +1019,7 @@ function rebuildPinList() {
     print("[Flaneur][UI] Assign Pin Entry Prefab for the sidebar list.");
     return;
   }
-  clearDynamicRows();
+  // Reuse existing row objects to avoid flicker/alternating visibility on close/open bursts.
   var keys = st.getAllKeys();
   var rows = [];
   for (var i = 0; i < keys.length; i++) {
@@ -441,29 +1045,74 @@ function rebuildPinList() {
   rows.sort(function (a, b) {
     return (b.t || 0) - (a.t || 0);
   });
-  var parent = script.sidebarListRoot;
-  for (var j = 0; j < rows.length; j++) {
-    var row = parent.copySceneObject(pref);
-    row.enabled = true;
-    row.setParent(parent);
-    setupPinRow(row, rows[j], st, api);
-    dynamicRows.push(row);
+  dbgUi("rebuildPinList: pins=" + rows.length + " parent=" + parent.name + " pref=" + pref.name + " reason=" + (reason || "?"));
+  // Remove extras
+  for (var d = dynamicRows.length - 1; d >= rows.length; d--) {
+    try {
+      if (dynamicRows[d] && !isNull(dynamicRows[d])) {
+        dynamicRows[d].destroy();
+      }
+    } catch (eDx) {}
+    dynamicRows.pop();
+  }
+  // Add missing
+  while (dynamicRows.length < rows.length) {
+    var newRow = parent.copySceneObject(pref);
+    newRow.enabled = true;
+    newRow.setParent(parent);
+    setEnabledOnSubtree(newRow, true);
+    dynamicRows.push(newRow);
+  }
+  // Ensure correct parent + enabled (in case the panel toggled)
+  for (var j = 0; j < dynamicRows.length; j++) {
+    var rr = dynamicRows[j];
+    if (!rr || isNull(rr)) continue;
+    try {
+      if (rr.getParent() !== parent) {
+        rr.setParent(parent);
+      }
+    } catch (ePar) {}
+    setEnabledOnSubtree(rr, true);
   }
   updatePinCountBadge();
+  runNextFrame(function () {
+    dbgUi("rebuildPinList: applying row contents on next frame, dynamicRows=" + dynamicRows.length);
+    for (var k = 0; k < dynamicRows.length; k++) {
+      setupPinRow(dynamicRows[k], rows[k], st, api);
+    }
+    refreshSpectaclesGridLayout(parent);
+    runNextFrame(function () {
+      dbgUi("rebuildPinList: reapplying author text on following frame");
+      for (var k2 = 0; k2 < dynamicRows.length; k2++) {
+        setAuthorTextOnPinRow(dynamicRows[k2], pinRowDisplayName(rows[k2]));
+      }
+    });
+  });
+}
+
+function rebuildPinList() {
+  requestPinListRebuild("call");
 }
 
 function onStoreKeyUpdated(key) {
   var api = getApi();
   if (!api) {
+    dbgUi("onStoreKeyUpdated: no api key=" + String(key));
     return;
   }
   var st = api.getStore();
   if (!st) {
+    dbgUi("onStoreKeyUpdated: no store key=" + String(key));
     return;
   }
+  // Ignore peer spam unless explicitly debugging.
+  if (typeof key === "string" && key.indexOf("peer:") === 0 && script.logUiDebug !== true) {
+    return;
+  }
+  dbgUi("onStoreKeyUpdated: " + String(key) + " sidebarOpen=" + sidebarOpen);
   if (key.indexOf(api.reactPrefix) === 0) {
     if (sidebarOpen) {
-      rebuildPinList();
+      requestPinListRebuild("react");
     }
     updatePinCountBadge();
     return;
@@ -487,7 +1136,7 @@ function onStoreKeyUpdated(key) {
   // Pin-drop head toast is handled in FlaneurMultiplayerMarkers (store update path) so it
   // never depends on this script’s TurnOn order or a pre-seed of “seen” ids.
   if (sidebarOpen) {
-    rebuildPinList();
+    requestPinListRebuild("pin");
   }
   updatePinCountBadge();
 }
@@ -531,7 +1180,9 @@ function applySidebarOpenState(isOpen) {
     } catch (e2) {}
   }
   if (sidebarOpen) {
-    rebuildPinList();
+    requestPinListRebuild("open");
+  } else {
+    // Keep rows alive while closed; just disable via sidebar root.
   }
   updatePinCountBadge();
   try {
@@ -553,6 +1204,11 @@ function exposeSidebarMethodsForRoundButtonCallbacks() {
     toggleSidebarPanel();
   };
   script.flaneurSidebarSetOpen = function (value) {
+    // Defensive: many setups accidentally wire BOTH onValueChanged (setOpen) and triggerUp (toggle).
+    // In that case Lens Studio fires both callbacks in the same gesture, causing open→close instantly.
+    if (shouldIgnoreSecondToggleInBurst()) {
+      return;
+    }
     if (arguments.length === 0) {
       applySidebarOpenState(true);
       return;
@@ -631,6 +1287,12 @@ script.createEvent("TurnOnEvent").bind(function () {
     global.flaneurPinStoreKeyUpdated = onStoreKeyUpdated;
   } catch (e) {}
   exposeSidebarMethodsForRoundButtonCallbacks();
+  stashPinEntryPrefabOutsideGrid();
+  if (script.pinEntryPrefab && !isNull(script.pinEntryPrefab)) {
+    try {
+      script.pinEntryPrefab.enabled = false;
+    } catch (ePref) {}
+  }
   sidebarOpen = false;
   if (script.sidebarBranchRoot && !isNull(script.sidebarBranchRoot)) {
     try {

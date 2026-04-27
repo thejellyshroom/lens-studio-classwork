@@ -1322,6 +1322,11 @@ function capturePinPhotoAsync(pinId) {
           }
           data.img = b64;
           flaneurStore.putString(key, JSON.stringify(data));
+          try {
+            if (typeof global !== "undefined" && typeof global.flaneurPinStoreKeyUpdated === "function") {
+              global.flaneurPinStoreKeyUpdated(key);
+            }
+          } catch (eUiNotify) {}
         },
         function () {
           print("[Flaneur] Pin photo encode failed.");

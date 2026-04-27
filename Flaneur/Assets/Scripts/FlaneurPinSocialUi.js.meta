@@ -29,6 +29,7 @@
     followLateralSpeedRef: false
     followYawDegPerSecRef: false
     headFollowUiRoot: false
+    logUiDebug: false
     pinEntryPrefab: false
     sidebarBranchRoot: false
     sidebarCloseIconTexture: false
@@ -77,6 +78,7 @@
       sidebarListRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pinEntryPrefab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       sidebarCloseIconTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
+      logUiDebug: false
   ScriptTypes:
     -
       {}
