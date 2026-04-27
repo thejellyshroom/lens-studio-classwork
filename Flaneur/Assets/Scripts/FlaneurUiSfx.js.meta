@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/0372cf3a-d15b-4c00-a7cb-a6cd5f561135>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> bba2d7a8-d365-4434-87b4-5d130a4c51da
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> bba2d7a8-d365-4434-87b4-5d130a4c51da
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> 0cdceeb1-3da5-4d07-ad92-cdba97ac8b21
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/0cdceeb1-3da5-4d07-ad92-cdba97ac8b21>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 18486c95-1be2-43c5-a8df-a2be5131492a
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    buttonPressSfx: false
+    logSfxDebug: false
+    minIntervalSeconds: false
+    pinDropSfx: false
+    remoteNavSfx: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - pinDropSfx: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
+      buttonPressSfx: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
+      remoteNavSfx: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
+      minIntervalSeconds: 0.080000
+      logSfxDebug: false
+  ScriptTypes:
+    -
+      {}

@@ -8632,7 +8632,7 @@
     - !<own> 9053306e-4072-409c-aebd-557c59a0ef67
     - !<own> d65d01b3-5069-4637-89ac-49909692f838
   Components:
-    []
+    - !<own> 5eeff4ef-2601-45b3-9bc1-7d486c205034
 - !<SceneObject/35f1a590-31a1-4b80-8259-ca8be14249da>
   PrefabRemaps:
     []
@@ -15361,6 +15361,27 @@
     []
   Components:
     - !<own> ece84d15-2862-442d-825b-236cc5598295
+- !<ScriptComponent/5eeff4ef-2601-45b3-9bc1-7d486c205034>
+  PrefabRemaps:
+    []
+  Name: FlaneurUiSfx
+  Enabled: true
+  ScriptAsset: !<reference> bba2d7a8-d365-4434-87b4-5d130a4c51da
+  ScriptInputsDefault:
+    minIntervalSeconds: true
+    logSfxDebug: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      pinDropSfx: !<reference.AudioComponent> 70d05b76-5f91-499f-9d08-0b3de5dcfffc
+      buttonPressSfx: !<reference.AudioComponent> e33942d4-d177-4e4d-a50f-1ef64a19e9ad
+      remoteNavSfx: !<reference.AudioComponent> 9c1dce86-851f-4e31-8243-23c3027c61eb
+      minIntervalSeconds: 0.080000
+      logSfxDebug: false
+  ScriptTypes:
+    "":
+      {}
 - !<ScriptComponent/5effb40f-8be7-4994-8849-089a91b27558>
   PrefabRemaps:
     []

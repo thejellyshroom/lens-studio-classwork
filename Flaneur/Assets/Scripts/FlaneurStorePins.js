@@ -762,6 +762,11 @@ function commitPinAtWorldPosition(worldVec3) {
   upsertMarkerScene(rec);
   dbgPin("Committed pin " + rec.id);
   try {
+    if (typeof global !== "undefined" && typeof global.flaneurSfxPinDrop === "function") {
+      global.flaneurSfxPinDrop();
+    }
+  } catch (eSfx) {}
+  try {
     if (typeof global !== "undefined" && global.flaneurPinShowToast) global.flaneurPinShowToast((localDisplayName || "You") + " dropped a pin!");
   } catch (e) {}
   try {

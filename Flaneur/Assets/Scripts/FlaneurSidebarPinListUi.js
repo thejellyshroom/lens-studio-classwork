@@ -194,6 +194,7 @@ function selectNavPin(pinId, pinLabel, reason) {
 
 function navigateToPin(pinId, pinLabel, source) {
   suppressPinDropForSeconds(0.8);
+  try { if (typeof global !== "undefined" && typeof global.flaneurSfxButton === "function") global.flaneurSfxButton(); } catch (eSfx) {}
   var id = pinId ? String(pinId) : "";
   var label = pinLabel ? String(pinLabel) : "";
   if (!label && id) {
@@ -242,6 +243,7 @@ function navigateToSharedNavigationTarget() {
 
 function resetNavigationToPeople() {
   suppressPinDropForSeconds(0.8);
+  try { if (typeof global !== "undefined" && typeof global.flaneurSfxButton === "function") global.flaneurSfxButton(); } catch (eSfx) {}
   var api = getApi();
   var ok = false;
   if (api && api.clearNavTarget) {
@@ -965,6 +967,7 @@ function onStoreKeyUpdated(key) {
       sharedNavPinId = rec.pinId ? String(rec.pinId) : "";
       sharedNavPinLabel = label;
       setNavigationTargetText(navStatusText(who, label));
+      try { if (typeof global !== "undefined" && typeof global.flaneurSfxRemoteNav === "function") global.flaneurSfxRemoteNav(); } catch (eSfxR) {}
     } else {
       if (!label) label = "a friend";
       setNavigationTargetText(who + " navigating to " + label + "!");
@@ -1025,6 +1028,7 @@ function toggleSidebarPanel() { applySidebarOpenState(!sidebarOpen); }
 function exposeSidebarMethodsForRoundButtonCallbacks() {
   script.flaneurToggleSidebar = function () {
     if (shouldIgnoreSecondToggleInBurst()) return;
+    try { if (typeof global !== "undefined" && typeof global.flaneurSfxButton === "function") global.flaneurSfxButton(); } catch (eSfx) {}
     toggleSidebarPanel();
   };
   script.flaneurSidebarSetOpen = function (value) {
