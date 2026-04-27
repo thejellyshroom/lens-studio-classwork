@@ -99,15 +99,7 @@ var dbgUiBurst = 0;
 var pinListRebuildQueued = false;
 var pinListRebuildQueuedAtT = -999;
 function dbgUi(msg) {
-  var on = !!script.logUiDebug;
-  if (!on) {
-    try {
-      if (global.deviceInfoSystem && global.deviceInfoSystem.isEditor && global.deviceInfoSystem.isEditor()) {
-        on = true;
-      }
-    } catch (eEdDbg) {}
-  }
-  if (!on) return;
+  if (!script.logUiDebug) return;
   // Rate limit to avoid peer:* spam drowning pin logs.
   var t = getTime();
   if (t - dbgUiLastT > 0.25) {
@@ -148,10 +140,6 @@ function clamp01(x) {
   return x;
 }
 
-function vec3Len(v) {
-  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-}
-
 function getFollowRoot() {
   if (script.headFollowUiRoot && !isNull(script.headFollowUiRoot)) {
     return script.headFollowUiRoot;
@@ -172,23 +160,6 @@ function findNamed(so, name) {
   var n = so.getChildrenCount();
   for (var i = 0; i < n; i++) {
     var f = findNamed(so.getChild(i), name);
-    if (f) {
-      return f;
-    }
-  }
-  return null;
-}
-
-function findNamedCaseInsensitive(so, nameLower) {
-  if (!so || isNull(so) || !nameLower) {
-    return null;
-  }
-  if (so.name && String(so.name).toLowerCase() === nameLower) {
-    return so;
-  }
-  var n = so.getChildrenCount();
-  for (var i = 0; i < n; i++) {
-    var f = findNamedCaseInsensitive(so.getChild(i), nameLower);
     if (f) {
       return f;
     }
@@ -224,28 +195,6 @@ function findNamedFuzzy(so, nameLower) {
   return null;
 }
 
-/** Depth-first: first component of type on self, then children (handles Image/Text on nested objects). */
-function findFirstComponentDeep(so, primaryType, altType) {
-  if (!so || isNull(so)) {
-    return null;
-  }
-  var c = so.getComponent(primaryType);
-  if (!c && altType) {
-    c = so.getComponent(altType);
-  }
-  if (c) {
-    return c;
-  }
-  var n = so.getChildrenCount();
-  for (var i = 0; i < n; i++) {
-    var found = findFirstComponentDeep(so.getChild(i), primaryType, altType);
-    if (found) {
-      return found;
-    }
-  }
-  return null;
-}
-
 function normalizeStoreImageBase64(s) {
   if (!s || typeof s !== "string") {
     return "";
@@ -275,103 +224,6 @@ function pinRowDisplayName(data) {
     return String(raw);
   }
   return "Player";
-}
-
-function sceneObjectSelfOrAncestorNameMatches(so, namesLower) {
-  var cur = so;
-  while (cur && !isNull(cur)) {
-    var nm = cur.name ? String(cur.name).toLowerCase() : "";
-    for (var i = 0; i < namesLower.length; i++) {
-      if (nm === namesLower[i]) {
-        return true;
-      }
-    }
-    cur = cur.getParent();
-  }
-  return false;
-}
-
-function eachTextComponentUnder(root, visitFn) {
-  if (!root || isNull(root) || !visitFn) {
-    return;
-  }
-  var types = ["Component.Text", "Text"];
-  for (var t = 0; t < types.length; t++) {
-    try {
-      var arr = root.getComponents(types[t]);
-      if (arr && arr.length) {
-        for (var i = 0; i < arr.length; i++) {
-          visitFn(arr[i]);
-        }
-      }
-    } catch (eG) {}
-  }
-  var n = root.getChildrenCount();
-  for (var j = 0; j < n; j++) {
-    eachTextComponentUnder(root.getChild(j), visitFn);
-  }
-}
-
-/**
- * Pin rows often bundle UIKit + custom labels; strict findNamed("Name") fails if names differ after copy.
- * Collect all Text under the row and prefer components under a "Name" / "PinName" hierarchy.
- */
-function setAuthorTextOnPinRow(row, label) {
-  var texts = [];
-  eachTextComponentUnder(row, function (tx) {
-    if (!tx || isNull(tx)) {
-      return;
-    }
-    for (var d = 0; d < texts.length; d++) {
-      if (texts[d] === tx) {
-        return;
-      }
-    }
-    texts.push(tx);
-  });
-  var preferred = [];
-  var nameHints = ["name", "pinname", "author"];
-  for (var p = 0; p < texts.length; p++) {
-    var comp = texts[p];
-    var so = null;
-    try {
-      so = comp.getSceneObject();
-    } catch (eSo) {}
-    if (so && sceneObjectSelfOrAncestorNameMatches(so, nameHints)) {
-      preferred.push(comp);
-    }
-  }
-  var targets = preferred;
-  if (targets.length === 0) {
-    var nameRoot =
-      findNamed(row, "PinName") ||
-      findNamed(row, "Name") ||
-      findNamedCaseInsensitive(row, "pinname") ||
-      findNamedCaseInsensitive(row, "name");
-    if (nameRoot) {
-      var under = [];
-      eachTextComponentUnder(nameRoot, function (tx) {
-        if (!tx || isNull(tx)) {
-          return;
-        }
-        under.push(tx);
-      });
-      if (under.length > 0) {
-        targets = under;
-      }
-    }
-  }
-  if (targets.length === 0) {
-    targets = texts.length === 1 ? texts : [];
-  }
-  if (targets.length === 0 && texts.length > 0) {
-    targets = texts;
-  }
-  for (var k = 0; k < targets.length; k++) {
-    try {
-      targets[k].text = label;
-    } catch (eTxt) {}
-  }
 }
 
 /** Cloned rows often share one material; without a per-row clone, last decoded texture wins for every cell. */
@@ -430,16 +282,8 @@ function ensurePinRowVisuals(row) {
   }
 
   // UIKit RectangleButton clones often only contain a Collider child. Ensure our own renderable children exist.
-  var imgSo =
-    findNamed(row, "PinPhoto") ||
-    findNamedFuzzy(row, "pinphoto") ||
-    findNamed(row, "Logo") ||
-    findNamedFuzzy(row, "logo");
-  var nameSo =
-    findNamed(row, "PinName") ||
-    findNamedFuzzy(row, "pinname") ||
-    findNamed(row, "Name") ||
-    findNamedFuzzy(row, "name");
+  var imgSo = findNamed(row, "PinPhoto") || findNamedFuzzy(row, "pinphoto");
+  var nameSo = findNamed(row, "PinName") || findNamedFuzzy(row, "pinname");
 
   if (!imgSo) {
     imgSo = scene.createSceneObject("PinPhoto");
@@ -867,74 +711,12 @@ function setupPinRow(row, data, store, api) {
   setEnabledOnSubtree(row, true);
   var visuals = ensurePinRowVisuals(row);
 
-  // Prefer exact Name/PinName nodes so we don't accidentally hit UIKit button labels.
   var label = pinRowDisplayName(data);
-  dbgUi(
-    "setupPinRow id=" +
-      (data && data.id ? data.id : "?") +
-      " label=" +
-      label +
-      " imgLen=" +
-      (data && data.img ? String(data.img).length : 0)
-  );
-  var nameRoot =
-    findNamed(row, "PinName") ||
-    findNamed(row, "Name") ||
-    findNamedCaseInsensitive(row, "pinname") ||
-    findNamedCaseInsensitive(row, "name") ||
-    findNamedFuzzy(row, "pinname") ||
-    findNamedFuzzy(row, "name");
-  dbgUi(" nameRoot=" + (nameRoot ? nameRoot.name : "null") + " row=" + (row ? row.name : "?"));
-  // Quick structural check if we can't find expected children (kept small to avoid log spam).
-  if (!nameRoot) {
-    try {
-      var c0 = row && !isNull(row) ? row.getChildrenCount() : -1;
-      var names = [];
-      var lim = Math.min(c0, 8);
-      for (var i0 = 0; i0 < lim; i0++) {
-        var ch = row.getChild(i0);
-        names.push(ch ? ch.name : "?");
-      }
-      dbgUi(" row children=" + c0 + " first=" + names.join(", "));
-    } catch (eDump) {}
-  }
   if (visuals && visuals.text) {
     try {
       visuals.text.text = label;
-      dbgUi(" set PinName text on ensured child OK");
     } catch (eEnsName) {}
-  } else if (nameRoot) {
-    try {
-      var t0 = nameRoot.getComponent("Component.Text") || nameRoot.getComponent("Text");
-      if (t0) {
-        t0.text = label;
-        dbgUi(" set Name text direct OK");
-      } else {
-        setAuthorTextOnPinRow(nameRoot, label);
-        dbgUi(" set Name text deep OK");
-      }
-    } catch (eName0) {
-      setAuthorTextOnPinRow(nameRoot, label);
-      dbgUi(" set Name text deep (catch) OK");
-    }
-  } else {
-    setAuthorTextOnPinRow(row, label);
-    dbgUi(" set Name text row fallback OK");
   }
-  // Confirm what the Name node currently displays (helps detect UIKit overwrites).
-  try {
-    var checkRoot =
-      findNamed(row, "PinName") ||
-      findNamed(row, "Name") ||
-      findNamedCaseInsensitive(row, "pinname") ||
-      findNamedCaseInsensitive(row, "name");
-    var checkText = checkRoot ? (checkRoot.getComponent("Component.Text") || checkRoot.getComponent("Text")) : null;
-    if (checkText) {
-      dbgUi(" Name node now='" + String(checkText.text) + "'");
-    } else {
-      dbgUi(" Name node has no Text component");
-    }
-  } catch (eCheck) {}
   var rawImg = data && data.img != null ? String(data.img) : "";
   var wantPlaceholder = false;
   try {
@@ -944,48 +726,22 @@ function setupPinRow(row, data, store, api) {
   } catch (eEd) {}
 
   if (rawImg.length > 0) {
-    var imgNode =
-      findNamed(row, "PinPhoto") ||
-      findNamed(row, "Logo") ||
-      findNamedCaseInsensitive(row, "pinphoto") ||
-      findNamedCaseInsensitive(row, "logo") ||
-      findNamedFuzzy(row, "pinphoto") ||
-      findNamedFuzzy(row, "logo");
-    var img = (visuals && visuals.img) ? visuals.img : (imgNode ? findFirstComponentDeep(imgNode, "Component.Image", "Image") : null);
-    if (!img) {
-      img = findFirstComponentDeep(row, "Component.Image", "Image");
-    }
+    var img = visuals ? visuals.img : null;
     if (img) {
       var payload = normalizeStoreImageBase64(rawImg);
       Base64.decodeTextureAsync(
         payload,
         function (tex) {
           applyTextureToPinRowImage(img, tex);
-          dbgUi(" set row image from store OK");
         },
         function () {}
       );
-    } else {
-      dbgUi(" image node found but no Image component");
     }
   } else if (wantPlaceholder) {
-    // Editor can't capture stills; show any assigned texture as a placeholder (randomness not required yet).
-    var imgNode2 =
-      findNamed(row, "PinPhoto") ||
-      findNamed(row, "Logo") ||
-      findNamedCaseInsensitive(row, "pinphoto") ||
-      findNamedCaseInsensitive(row, "logo") ||
-      findNamedFuzzy(row, "pinphoto") ||
-      findNamedFuzzy(row, "logo");
-    var img2 = (visuals && visuals.img) ? visuals.img : (imgNode2 ? findFirstComponentDeep(imgNode2, "Component.Image", "Image") : null);
-    if (!img2) {
-      img2 = findFirstComponentDeep(row, "Component.Image", "Image");
-    }
+    // Editor can't capture stills; show any assigned texture as a placeholder.
+    var img2 = visuals ? visuals.img : null;
     if (img2 && script.sidebarCloseIconTexture && !isNull(script.sidebarCloseIconTexture)) {
       applyTextureToPinRowImage(img2, script.sidebarCloseIconTexture);
-      dbgUi(" set row placeholder image OK");
-    } else {
-      dbgUi(" placeholder: missing Image component or sidebarCloseIconTexture not set");
     }
   }
   var rc = reactionCounts(store, api, data.id);
@@ -1076,17 +832,10 @@ function rebuildPinListImmediate(reason) {
   }
   updatePinCountBadge();
   runNextFrame(function () {
-    dbgUi("rebuildPinList: applying row contents on next frame, dynamicRows=" + dynamicRows.length);
     for (var k = 0; k < dynamicRows.length; k++) {
       setupPinRow(dynamicRows[k], rows[k], st, api);
     }
     refreshSpectaclesGridLayout(parent);
-    runNextFrame(function () {
-      dbgUi("rebuildPinList: reapplying author text on following frame");
-      for (var k2 = 0; k2 < dynamicRows.length; k2++) {
-        setAuthorTextOnPinRow(dynamicRows[k2], pinRowDisplayName(rows[k2]));
-      }
-    });
   });
 }
 

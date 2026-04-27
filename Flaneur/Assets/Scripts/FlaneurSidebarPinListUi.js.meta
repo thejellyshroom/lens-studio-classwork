@@ -1,0 +1,60 @@
+- !<AssetImportMetadata/863fe2b2-0ecf-479e-b693-f4d060ff3b28>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 7900ea41-f3dc-4d71-8787-7922a91c53a7
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 7900ea41-f3dc-4d71-8787-7922a91c53a7
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> adc869ec-719f-419e-821a-dbf11f09629b
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/adc869ec-719f-419e-821a-dbf11f09629b>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 2427b9b5-ed0b-4d64-8145-049486627cbb
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    headFollowUiRoot: false
+    logUiDebug: false
+    pinEntryPrefab: false
+    sidebarBranchRoot: false
+    sidebarCloseIconTexture: false
+    sidebarCountBadge: false
+    sidebarFab: false
+    sidebarListRoot: false
+    sidebarPanel: false
+    sidebarToggleInteraction: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - sidebarToggleInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
+      sidebarFab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarCountBadge: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      sidebarPanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarBranchRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarListRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinEntryPrefab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      sidebarCloseIconTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
+      headFollowUiRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      logUiDebug: false
+  ScriptTypes:
+    -
+      {}

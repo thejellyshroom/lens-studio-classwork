@@ -1,0 +1,66 @@
+- !<AssetImportMetadata/56ef8ff9-af1e-4cc0-b56a-6a2d86eb635f>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> b6442143-c010-44fa-8ed5-dcf1d40c0e03
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> b6442143-c010-44fa-8ed5-dcf1d40c0e03
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> 0046c51b-963e-4822-8aa1-35c0c1645bbd
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/0046c51b-963e-4822-8aa1-35c0c1645bbd>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: a338b754-21cc-46a9-a953-a0b5baa4f5dc
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    editorTouchBlockingForPreview: false
+    logPinInputDebug: false
+    pinDropFromGlobalScreenEvents: false
+    pinDropInteraction: false
+    pinDropListenTriggerPrimary: false
+    pinDropUiBlockerRoot: false
+    pinDropUiBlockerRootExtra: false
+    pinDropUiScreenSpaceCamera: false
+    pinDropUiWorldProjectionSampleBudget: false
+    pinDropUseWorldUiProjectionBlock: false
+    pinDropWorldUiBlockScreenRadius: false
+    placementDepth: false
+    worldCamera: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      placementDepth: !<float> 200.000000
+      pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
+      pinDropFromGlobalScreenEvents: false
+      pinDropListenTriggerPrimary: false
+      editorTouchBlockingForPreview: false
+      pinDropUiBlockerRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinDropUiBlockerRootExtra: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinDropUseWorldUiProjectionBlock: true
+      pinDropWorldUiBlockScreenRadius: 0.110000
+      pinDropUiWorldProjectionSampleBudget: 400
+      pinDropUiScreenSpaceCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      logPinInputDebug: false
+  ScriptTypes:
+    -
+      {}

@@ -1,0 +1,66 @@
+- !<AssetImportMetadata/6259b02e-c336-4fb8-8cde-f54821588d38>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 5ef7b5a4-d0b5-4f0a-9306-5a3be347d769
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 5ef7b5a4-d0b5-4f0a-9306-5a3be347d769
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> 7e071555-30bb-4f00-9432-5b4f8465a313
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/7e071555-30bb-4f00-9432-5b4f8465a313>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 110167b2-b7f0-4b66-ab68-e4aad7a34734
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    followLateralSpeedRef: false
+    followYawDegPerSecRef: false
+    headFollowUiRoot: false
+    toastAnchor: false
+    toastFadeSeconds: false
+    toastFollowSmoothTime: false
+    toastHoldSeconds: false
+    toastLocalX: false
+    toastLocalY: false
+    toastLocalZ: false
+    toastStraightFollowSmoothTime: false
+    toastText: false
+    worldCamera: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      toastAnchor: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      headFollowUiRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      toastText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      toastLocalX: !<float> 0.000000
+      toastLocalY: !<float> 12.000000
+      toastLocalZ: !<float> -48.000000
+      toastFollowSmoothTime: 0.220000
+      toastStraightFollowSmoothTime: 0.035000
+      followLateralSpeedRef: 0.140000
+      followYawDegPerSecRef: !<float> 38.000000
+      toastHoldSeconds: 2.500000
+      toastFadeSeconds: 0.850000
+  ScriptTypes:
+    -
+      {}

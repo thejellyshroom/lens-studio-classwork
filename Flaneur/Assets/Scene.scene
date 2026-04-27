@@ -2604,38 +2604,16 @@
 - !<ScriptComponent/1094deab-8c71-4084-9969-536afd1354c4>
   PrefabRemaps:
     []
-  Name: FlaneurPinSocialUi
+  Name: FlaneurSidebarPinListUi
   Enabled: true
-  ScriptAsset: !<reference> 743ff105-d38b-406e-b960-9a2fdaa60a40
+  ScriptAsset: !<reference> 7900ea41-f3dc-4d71-8787-7922a91c53a7
   ScriptInputsDefault:
-    toastLocalX: true
-    toastLocalY: true
-    toastLocalZ: true
-    toastFollowSmoothTime: true
-    toastStraightFollowSmoothTime: true
-    followLateralSpeedRef: true
-    followYawDegPerSecRef: true
-    toastHoldSeconds: true
-    toastFadeSeconds: true
     sidebarToggleInteraction: true
     logUiDebug: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
     "":
-      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
-      toastAnchor: !<reference.SceneObject> c993e9a5-7d90-4ec2-87f6-c1f632250707
-      headFollowUiRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
-      toastText: !<reference.Text> 5a360d10-f6f6-4ad0-b6c3-f1d9c8b17d52
-      toastLocalX: !<float> 0.000000
-      toastLocalY: !<float> 12.000000
-      toastLocalZ: !<float> -48.000000
-      toastFollowSmoothTime: 0.220000
-      toastStraightFollowSmoothTime: 0.035000
-      followLateralSpeedRef: 0.140000
-      followYawDegPerSecRef: !<float> 38.000000
-      toastHoldSeconds: 2.500000
-      toastFadeSeconds: 0.850000
       sidebarToggleInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
       sidebarFab: !<reference.SceneObject> 4a70f5dd-9fc9-462f-8b05-b6df7e5a42b6
       sidebarCountBadge: !<reference.Text> b8563d15-b0d5-4c8a-a364-89b5ab2e877b
@@ -2644,6 +2622,7 @@
       sidebarListRoot: !<reference.SceneObject> 14f70ee6-9249-4264-9503-40dbab766d53
       pinEntryPrefab: !<reference.SceneObject> 7177e9b8-dc0c-48f5-81f3-2462aa005093
       sidebarCloseIconTexture: !<reference.Texture> 73b20c35-a336-410d-9897-bdca3d55577c
+      headFollowUiRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
       logUiDebug: false
   ScriptTypes:
     "":
@@ -6972,6 +6951,24 @@
     - !<own> f73b9451-4437-41d8-a89c-eeecc8923dbe
   Components:
     []
+- !<ScriptComponent/2f1b7f48-6f6e-4a5f-9d2c-6d2794dce5a6>
+  PrefabRemaps:
+    []
+  Name: FlaneurPinPhotoCapture
+  Enabled: true
+  ScriptAsset: !<reference> 56bfacde-856d-401b-8d6f-2039725c31ae
+  ScriptInputsDefault:
+    capturePinPhotos: true
+    logPinInputDebug: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      capturePinPhotos: true
+      logPinInputDebug: false
+  ScriptTypes:
+    "":
+      {}
 - !<Text/2f7da0c7-7ae9-49fc-b3ac-b89d6cb50c74>
   PrefabRemaps:
     []
@@ -13522,7 +13519,7 @@
   MeshShadowMode: None
   ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
   ShadowDensity: 1.000000
-  Text: Text
+  Text: ""
   Editable: false
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
@@ -14387,7 +14384,7 @@
   ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
   ShadowDensity: 1.000000
   Materials:
-    - !<reference> 143da287-cec9-4f2a-bc4e-c73a9dbeb13b
+    - !<reference> 43cef03d-f777-425e-b3e3-afa731a19cf3
   FlipX: false
   FlipY: false
   RotationAngle: 0
@@ -15935,6 +15932,43 @@
     bottom: 0.000000
     right: 0.000000
     top: 0.000000
+- !<ScriptComponent/6b7f6d1c-4cc1-4a6d-97c5-1c1bf3ea1cf5>
+  PrefabRemaps:
+    []
+  Name: FlaneurPinInput
+  Enabled: true
+  ScriptAsset: !<reference> b6442143-c010-44fa-8ed5-dcf1d40c0e03
+  ScriptInputsDefault:
+    placementDepth: true
+    pinDropInteraction: true
+    pinDropFromGlobalScreenEvents: true
+    pinDropListenTriggerPrimary: true
+    editorTouchBlockingForPreview: true
+    pinDropUseWorldUiProjectionBlock: true
+    pinDropWorldUiBlockScreenRadius: true
+    pinDropUiWorldProjectionSampleBudget: true
+    pinDropUiScreenSpaceCamera: true
+    logPinInputDebug: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
+      placementDepth: !<float> 200.000000
+      pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
+      pinDropFromGlobalScreenEvents: false
+      pinDropListenTriggerPrimary: false
+      editorTouchBlockingForPreview: false
+      pinDropUiBlockerRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
+      pinDropUiBlockerRootExtra: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
+      pinDropUseWorldUiProjectionBlock: true
+      pinDropWorldUiBlockScreenRadius: 0.110000
+      pinDropUiWorldProjectionSampleBudget: 400
+      pinDropUiScreenSpaceCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      logPinInputDebug: false
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/6b9345b9-c902-4ba9-bd9b-c5c093f2e295>
   PrefabRemaps:
     []
@@ -17875,6 +17909,7 @@
     []
   Components:
     - !<own> 1094deab-8c71-4084-9969-536afd1354c4
+    - !<own> b2b976d4-26c4-42d6-a3ac-c4c564b33309
 - !<ScriptComponent/799bed11-591f-4dca-ac46-5f67bca2ab1f>
   PrefabRemaps:
     []
@@ -23808,54 +23843,6 @@
     - !<own> 1f7eee53-7c05-4143-b27d-526aef4c97e3
   Components:
     []
-- !<ScriptComponent/a0a286c2-34f5-4e4d-9578-0d8ebad3e58c>
-  PrefabRemaps:
-    []
-  Name: FlaneurMultiplayerMarkers
-  Enabled: true
-  ScriptAsset: !<reference> 6d53d83f-ff48-48f7-a8d2-e085c988c7ca
-  ScriptInputsDefault:
-    placementDepth: true
-    autoShareOnSoloConnect: true
-    useSpectaclesSyncKit: true
-    pinDropInteraction: true
-    logNetworkDebug: true
-    capturePinPhotos: true
-    pinDropFromGlobalScreenEvents: true
-    editorTouchBlockingForPreview: true
-    pinDropListenTriggerPrimary: true
-    pinDropUseWorldUiProjectionBlock: true
-    pinDropWorldUiBlockScreenRadius: true
-    pinDropUiWorldProjectionSampleBudget: true
-    pinDropUiScreenSpaceCamera: true
-  ScriptTypesDefault:
-    {}
-  ScriptInputs:
-    "":
-      connectedLensModule: !<reference.ConnectedLensModule> a36fb029-f716-4bb1-ae29-8f14862e7ce3
-      markersRoot: !<reference.SceneObject> c4177d45-3ea4-4837-8cf4-d714d1ce8d05
-      pinStoreCoordinateRoot: !<reference.SceneObject> c4177d45-3ea4-4837-8cf4-d714d1ce8d05
-      pinTemplate: !<reference.SceneObject> 66d9bf23-daa3-4a5e-a7c7-e2f1df8f3a2a
-      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
-      placementDepth: !<float> 200.000000
-      autoShareOnSoloConnect: true
-      useSpectaclesSyncKit: true
-      pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
-      logPinInputDebug: true
-      logNetworkDebug: false
-      capturePinPhotos: true
-      pinDropFromGlobalScreenEvents: false
-      editorTouchBlockingForPreview: false
-      pinDropUiBlockerRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
-      pinDropUiBlockerRootExtra: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
-      pinDropListenTriggerPrimary: false
-      pinDropUseWorldUiProjectionBlock: true
-      pinDropWorldUiBlockScreenRadius: 0.110000
-      pinDropUiWorldProjectionSampleBudget: 400
-      pinDropUiScreenSpaceCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
-  ScriptTypes:
-    "":
-      {}
 - !<ScriptComponent/a0f26cc2-afb9-441f-9981-071151e45988>
   PrefabRemaps:
     []
@@ -26752,6 +26739,42 @@
     CapitalizationOverride: None
   DepthTest: false
   TwoSided: false
+- !<ScriptComponent/b2b976d4-26c4-42d6-a3ac-c4c564b33309>
+  PrefabRemaps:
+    []
+  Name: FlaneurToastFollowUi
+  Enabled: true
+  ScriptAsset: !<reference> 5ef7b5a4-d0b5-4f0a-9306-5a3be347d769
+  ScriptInputsDefault:
+    toastLocalX: true
+    toastLocalY: true
+    toastLocalZ: true
+    toastFollowSmoothTime: true
+    toastStraightFollowSmoothTime: true
+    followLateralSpeedRef: true
+    followYawDegPerSecRef: true
+    toastHoldSeconds: true
+    toastFadeSeconds: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
+      toastAnchor: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      headFollowUiRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
+      toastText: !<reference.Text> 5a360d10-f6f6-4ad0-b6c3-f1d9c8b17d52
+      toastLocalX: !<float> 0.000000
+      toastLocalY: !<float> 12.000000
+      toastLocalZ: !<float> -48.000000
+      toastFollowSmoothTime: 0.220000
+      toastStraightFollowSmoothTime: 0.035000
+      followLateralSpeedRef: 0.140000
+      followYawDegPerSecRef: !<float> 38.000000
+      toastHoldSeconds: 2.500000
+      toastFadeSeconds: 0.850000
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/b323e68e-d753-491a-9d27-3b53767f77a8>
   PrefabRemaps:
     []
@@ -28961,6 +28984,35 @@
     []
   Components:
     - !<own> 249b1ff0-5705-4fe3-8d11-5915d0ea97bd
+- !<ScriptComponent/ba9a3125-5f03-4aa5-8c89-c8078249bd83>
+  PrefabRemaps:
+    []
+  Name: FlaneurStorePins
+  Enabled: true
+  ScriptAsset: !<reference> e20fbb15-e0ef-44fa-ab49-90d50d34d9c2
+  ScriptInputsDefault:
+    autoShareOnSoloConnect: true
+    useSpectaclesSyncKit: true
+    logNetworkDebug: true
+    logPinInputDebug: true
+    capturePinPhotos: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      connectedLensModule: !<reference.ConnectedLensModule> a36fb029-f716-4bb1-ae29-8f14862e7ce3
+      markersRoot: !<reference.SceneObject> c4177d45-3ea4-4837-8cf4-d714d1ce8d05
+      pinStoreCoordinateRoot: !<reference.SceneObject> c4177d45-3ea4-4837-8cf4-d714d1ce8d05
+      pinTemplate: !<reference.SceneObject> 66d9bf23-daa3-4a5e-a7c7-e2f1df8f3a2a
+      worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
+      autoShareOnSoloConnect: true
+      useSpectaclesSyncKit: true
+      logNetworkDebug: false
+      logPinInputDebug: false
+      capturePinPhotos: true
+  ScriptTypes:
+    "":
+      {}
 - !<ScriptComponent/bafc0543-be67-4eeb-873c-4aef82de85da>
   PrefabRemaps:
     []
@@ -31657,8 +31709,10 @@
   Children:
     []
   Components:
-    - !<own> a0a286c2-34f5-4e4d-9578-0d8ebad3e58c
+    - !<own> 2f1b7f48-6f6e-4a5f-9d2c-6d2794dce5a6
+    - !<own> 6b7f6d1c-4cc1-4a6d-97c5-1c1bf3ea1cf5
     - !<own> 7c435b61-64f1-4558-8c09-cd26e5deba88
+    - !<own> ba9a3125-5f03-4aa5-8c89-c8078249bd83
 - !<SceneObject/cd5f8ba0-151c-4924-a4b2-069229402c6e>
   PrefabRemaps:
     []

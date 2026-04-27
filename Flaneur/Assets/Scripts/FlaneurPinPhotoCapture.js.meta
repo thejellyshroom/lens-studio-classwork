@@ -1,0 +1,44 @@
+- !<AssetImportMetadata/6b5b307d-6597-42b2-8e91-941d5f2730d9>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 56bfacde-856d-401b-8d6f-2039725c31ae
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 56bfacde-856d-401b-8d6f-2039725c31ae
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> bff48341-a3e6-498a-ba4a-720cb1885121
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/bff48341-a3e6-498a-ba4a-720cb1885121>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 56368434-ffe4-46bf-a8ba-50207dde7ef0
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    capturePinPhotos: false
+    logPinInputDebug: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - capturePinPhotos: true
+      logPinInputDebug: false
+  ScriptTypes:
+    -
+      {}
