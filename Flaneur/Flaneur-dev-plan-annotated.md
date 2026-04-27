@@ -4,7 +4,7 @@
 
 **Purpose of this copy:** Same dev plan content with annotations in three categories:
 
-1. **Recording** — What is *reflected in the demo recording you submitted* (below prefilled from **what the current Lens Studio project can demonstrate** as of 2026-04-19; edit if your video showed more, less, or different).
+1. **Recording** — What is *reflected in the demo recording you submitted* (below prefilled from **what the current Lens Studio project can demonstrate** as of **2026-04-27**; edit if your video showed more, less, or different).
 2. **Working on** — What engineering is **actively in progress** per [`Flaneur-implementation-tracker.md`](Flaneur-implementation-tracker.md).
 3. **Obsolete / deferred** — What the written plan described but is **not pursued yet**, **superseded by implementation choices**, or **blocked** by execution rules.
 
@@ -15,10 +15,11 @@
 | Plan area | Recording (typical demo from this repo) | Working on | Obsolete / deferred |
 |-----------|----------------------------------------|------------|---------------------|
 | Pairing / launch UI | Session entry via Connected Lens / Spectacles Sync Kit, not a custom Flâneur pairing screen | Document exact Preview / Sync Kit clicks for class demos | Custom in-lens “pairing screen → lobby list” as sole path |
-| Compass wake | Peer direction via `FlaneurPeerCompass.js` (RealtimeStore `peer:<id>`, HUD needles, stored/world alignment with pins) | Validation on two devices / dual preview; possible names, distance, world-space compasses | Perfect GPS-based compass; compasses as only screen-edge arcs if implementation differs |
+| Compass wake | Peer direction via `FlaneurPeerCompass.js` (RealtimeStore `peer:<id>`, HUD needles, stored/world alignment with pins); nav target needle + `compassTargetText` when `nav:<id>` selects a pin | Validation on two devices / dual preview; distance readouts, world-space compasses | Perfect GPS-based compass; compasses as only screen-edge arcs if implementation differs |
 | Ghost reveal | Not demoable | — | Blocked until core loop + Custom Location / cloud story |
-| Pinning | Shared pins (`FlaneurMultiplayerMarkers.js`), RealtimeStore `pin:<id>`, photos/name metadata, remote head toast | Reliability on Spectacles + multi-user | Pinch + gaze-only as *required* input (actual path: Interaction / screen events + optional triggers) |
-| Reacting | Three synced reactions on **sidebar rows** (`react:<pinId>:<userId>`) | World radial / pin-anchored reactions | Spec’s “look at pin → world radial” as implemented today |
+| Pinning | Shared pins via **`FlaneurStorePins.js`** (scene object may still be named `FlaneurMultiplayerMarkers`), RealtimeStore `pin:<id>`, photos/name metadata, remote head toast | Reliability on Spectacles + multi-user | Pinch + gaze-only as *required* input (actual path: Interaction / screen events + optional triggers) |
+| Guide me here / nav | `nav:<peerCompassId>` in RealtimeStore; sidebar rows + `FlaneurPinRowNavCallback.js`; persistent **Navigation/Text**; Navigate + Reset; pin-drop suppression; optional `FlaneurUiSfx.js` | Edge cases: many pins, slot wiring, device testing | Spec wording that **only** a peer toast carries “who’s navigating where” (implementation: **persistent nav line** + transient toast/SFX) |
+| Reacting | Three synced reactions on **sidebar rows** (`react:<pinId>:<userId>`) | World radial / pin-anchored reactions | Spec’s “look at pin → world radial” **not** in build (sidebar model instead) |
 | Meet Here | Not implemented | — | Blocked by primary execution rule until shared spatial loop is stable |
 | Session end / recap / Snap Cloud | Not implemented | — | Explicitly blocked / deferred per primary rule and tracker |
 | Custom Location | Optional visual skin only; **not** required for current pin sync | Fallback strategy later per secondary rule | Plan text that pins *depend on* Custom Location for basic multiplayer (current model: stored space + Connected Lens) |
@@ -71,15 +72,16 @@ Figures: see original `Flaneur dev plan.md` (`image2`).
 
 * **Persistent world-anchored pins across multiple users simultaneously** — the hardest concurrency + spatial anchoring challenge in the entire app.
 * **Compass direction to group members** using relative spatial positioning without requiring precise GPS (indoor environments like museums have poor GPS).
+* **Guide me here / navigation targets** — per-peer `nav:` records, compass retargeting, synced group-visible status, and UI that does not fight pin-drop input.
 * **Session lifecycle management:** pairing, active session, recap generation, and graceful disbanding — all with low latency on-device.
 * **Avoiding AR clutter:** dynamic LOD logic to fade, scale, or suppress pins when the field of view is too crowded.
 * **Recap generation:** aggregating all group pins at session end and rendering a spatially composed collage in real time on-device.
 
 **Annotations**
 
-- **Recording:** **Pins + compass** problems are the ones a recording can **show progress** on; **clutter LOD** and **full lifecycle** are mostly **not** visible yet.
-- **Working on:** **Pins + compass + session store** wiring; tightening dual-preview / device behavior.
-- **Obsolete / deferred:** None of the five problems are “wrong”; **recap, heavy lifecycle UI, clutter LOD** are **de-prioritized** until the shared spatial loop is bulletproof (see primary execution rule).
+- **Recording:** **Pins + compass + guide-me-here** are the problems a recording can **show** today; **clutter LOD** and **full lifecycle** are mostly **not** visible yet.
+- **Working on:** On-device validation, sidebar/nav polish, and any remaining multi-user edge cases.
+- **Obsolete / deferred:** **Recap, heavy lifecycle UI, clutter LOD** remain **de-prioritized** until the shared spatial loop is bulletproof (see primary execution rule).
 
 ### **Lens Studio Functionality to Explore**
 
@@ -95,7 +97,7 @@ The backbone of the entire experience. Connected Lens handles real-time group st
 **Annotations**
 
 - **Recording:** **RealtimeStore for pins** and **`peer:<id>` for compass** are the credible demo story; **reactions** appear as **persisted store keys on sidebar**, not necessarily as ephemeral messaging.
-- **Working on:** Store bind robustness, remote toasts, `localOriginatedPinIds` / updater metadata edge cases.
+- **Working on:** Store bind robustness, remote toasts, `localOriginatedPinIds` / updater metadata edge cases; `nav:` key lifecycle.
 - **Obsolete / deferred:** Assuming **realtime messaging** (non-Store) is required for reactions—**current build uses RealtimeStore reaction keys**; **join/leave → recap** hooks **not** implemented.
 
 #### **Custom Locations (Persistent Spatial Anchoring)**
@@ -136,7 +138,7 @@ Powers the group's shared history — persisting pin archives across sessions so
 **Annotations**
 
 - **Recording:** Likely **InteractionComponent / tap / trigger** paths rather than a polished **pinch + gaze** stack; **peer compass** may be screen/HUD style.
-- **Working on:** Input reliability on device vs Editor; optional UI blocking for accidental drops.
+- **Working on:** Input reliability on device vs Editor; **pin-drop suppression** window for always-on **Navigate** / **Reset** (`global.flaneurSuppressPinDrop` + `FlaneurPinInput` checks).
 - **Obsolete / deferred:** Treating **pinch + gaze** as the **only** shipped interaction model—they are **aspirational** in the plan, **not** the exclusive implementation.
 
 #### **Visual / Rendering**
@@ -150,7 +152,7 @@ Powers the group's shared history — persisting pin archives across sessions so
 **Annotations**
 
 - **Recording:** **Pins + simple markers + social UI**; **particle Meet Here** and **recap layout** are **not** expected.
-- **Working on:** Pin template visibility, toast + sidebar polish as needed.
+- **Working on:** Pin template visibility, toast + sidebar + **Navigation** line polish; UISFX levels.
 - **Obsolete / deferred:** **Recap layout** and **Meet Here VFX** deferred; the **Cloud half** of the note is **not build-complete** yet.
 
 ---
@@ -221,6 +223,7 @@ Steps 4–6 (the exploration phase) should feel like the app disappears. Users s
 | 2 | **Compass Wake** | The AR layer activates. Peripheral Compass arcs appear at screen edges indicating where each group member is. The physical space ahead is clear — no visual clutter yet. |
 | 3 | **Ghost Reveal** *(if return visit)* | If the Custom Location is recognized, faint ghost pins from prior sessions materialize briefly. User can brush-gesture to explore them or ignore them and walk. |
 | 4 | **Exploration — Pinning** | Users explore independently. When something catches their eye, they pinch to drop a pin. Their pin floats above the object in their color, visible to the full group. |
+| 4b | **Navigation — Guide me here (MVP)** | Sidebar pin row → compass retarget + possessive label; **Navigation/Text** for group status; **Navigate** / **Reset**; transient toast/SFX optional. |
 | 5 | **Exploration — Reacting** | Group members see each other's pins floating in world space. Looking at a pin surfaces the 3-option reaction radial. Users react without speaking or stopping. |
 | 6 | **Meet Here** | When the group wants to regroup, any member drops a Meet Here beacon on the ground. All Compass indicators immediately pivot to point toward it. Members converge. |
 | 7 | **Session End** | One user (or the group together) triggers End Session via a simple menu. Flâneur signals all devices that the session is closing. |
@@ -235,5 +238,6 @@ Steps 4–6 (the exploration phase) should feel like the app disappears. Users s
 | 2 | Peer compass / needles **if** demo runs multiplayer | Tuning + multi-device validation | “Screen-edge arcs” only if your HUD differs |
 | 3 | **No** | — | Entire row until persistence |
 | 4 | **Yes** — core demo | Input + store edge cases | “Pinch-only” wording |
+| 4b | **Yes** — nav store + compass + sidebar | Device hardening; slot/prefab wiring docs | Treating **toast** as the **only** persistent nav UI (superseded: **Navigation/Text**) |
 | 5 | **Partial** — reactions **not** world radial | Possible move toward spec | Sidebar-only as final design **not** decided—**spec** still targets world |
 | 6–9 | **No** | — | Blocked / future |

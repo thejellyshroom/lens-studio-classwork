@@ -4,7 +4,8 @@ This file tracks what is built in Lens Studio versus the product spec (`Flâneur
 
 ## MVP idea to preserve (navigation without texting)
 
-**Guide me here (pin navigation target):** tap/select a pin → “Guide me here” → your compass arrow retargets to that pin and shows the pin name under the arrow. Default target remains “other friend / peers” when no pin is selected. When one person sets a navigation target, other peers see a secondary toast like “Jessica is navigating to ‘Ramen Stall’” (and optionally a quick action to navigate to the same pin).
+**Guide me here (pin navigation target) — shipped in repo:** Tap a pin row in the collapsible sidebar (`RectangleButton` on `PinEntry.prefab`, callback on `FlaneurPinRowNavCallback.flaneurNavToMe`). RealtimeStore keys `nav:<peerCompassId>` hold each peer’s active target (peer or pin); `FlaneurPeerCompass.js` aims the primary needle from **camera/head** and sets **`compassTargetText`** to a **possessive pin label** when the target is a pin. **Persistent** group-facing copy lives on **`Navigation` → `Text`** (wired through `FlaneurSidebarPinListUi.js` inputs `navigationRoot` / `navigationTargetText`). **Navigate** calls `global.flaneurNavToSharedTarget` to match the last known shared pin target; **Reset** calls `global.flaneurResetNavigation` to clear your `nav:` record and return the compass to peers. **Toasts** (`FlaneurToastFollowUi.js`) are for **transient** remote cues, not the main nav readout. **Pin-drop suppression:** `global.flaneurSuppressPinDrop` / `flaneurSuppressPinDropUntil` (from sidebar handlers) plus `FlaneurPinInput` / `FlaneurStorePins` checks prevent accidental pins when pressing always-on nav buttons. **Audio:** `FlaneurUiSfx.js` on the UISFX prefab exposes `global.flaneurSfxPinDrop`, `flaneurSfxButton`, `flaneurSfxRemoteNav` → `AudioComponent` inputs.
+
 ---
 
 ## Product snapshot (why this exists)
@@ -20,10 +21,10 @@ This file tracks what is built in Lens Studio versus the product spec (`Flâneur
 | Phase | Status |
 |------:|:-------|
 | 1 Launch & Pair | Not implemented in-scene (Connected Lens / Sync Kit handles session entry). |
-| 2 Compass Wake | **In progress** — `FlaneurPeerCompass.js`: RealtimeStore `peer:<id>` poses + HUD needles (horizontal bearing); same frame as pins. |
+| 2 Compass Wake | **Implemented** — `FlaneurPeerCompass.js`: RealtimeStore `peer:<id>` poses + HUD needles; optional nav needle from `nav:<myId>`; bearing from camera/head. |
 | 3 Ghost Reveal (return visit) | **Blocked** until core loop + Custom Location / cloud story |
-| 4 Exploration — Pinning | **In progress** (store + markers + photo metadata + UI list) |
-| 4b Navigation — Guide me here | **Planned (MVP add-on)** — select pin → retarget compass + show target label; broadcast “navigating to …” toast to peers |
+| 4 Exploration — Pinning | **Implemented** (see `FlaneurStorePins.js` + pin list UI) |
+| 4b Navigation — Guide me here | **Implemented** — `nav:` keys, sidebar row nav, persistent Navigation text, Navigate/Reset, suppression, UISFX |
 | 5 Exploration — Reacting | **Partial** (three synced reactions on sidebar rows; not world radial) |
 | 6 Meet Here | **Blocked** by primary rule |
 | 7 Session End | **Not started** |
@@ -34,18 +35,25 @@ This file tracks what is built in Lens Studio versus the product spec (`Flâneur
 
 ## What is implemented today
 
-**Primary script:** `Assets/Scripts/FlaneurMultiplayerMarkers.js` (Phase A).
+**Primary script:** `Assets/Scripts/FlaneurStorePins.js` (Phase A). In the default scene it often still lives on the SceneObject named **`FlaneurMultiplayerMarkers`** (legacy name).
 
 - **Connected Lens + Spectacles Sync Kit:** Wires `global.sessionController` when `useSpectaclesSyncKit` is true; falls back to standalone `ConnectedLensModule` + `ConnectedLensEnteredEvent` after a timeout or when Sync Kit is off.
-- **RealtimeStore:** Session-scoped store id `flaneur_pins_v1`, unowned, with `pin:<id>` keys and JSON records `{ id, oid, name, img?, x, y, z, t }` in markers-root space (or world if no root); `peer:<ownerId>` for live head position `{ x, y, z, t, n? }` (compass script).
-- **Markers:** Spawns from `pinTemplate` (or empty `SceneObject`), parents under `markersRoot` or the script object; `onRealtimeStoreUpdated` / rebuild applies remote keys.
-- **Pin drop input:** **Pin Drop From Global Screen Events** defaults **off**; primary path is **Pin Drop Interaction** (`InteractionComponent`, recommended for Spectacles Preview) plus optional **Trigger Primary** when `pinDropListenTriggerPrimary` is on. With global screen events on, assign **Pin Drop UI Blocker Root** / **Extra** so `ScreenTransform.containsScreenPoint` skips placement on UI. **Editor Touch Blocking For Preview** defaults off.
-- **Remote pin toasts:** Other clients’ drops raise the head toast via `FlaneurMultiplayerMarkers.maybeNotifyRemotePinDropFromStoreKey` — skips only pins this client originated (`localOriginatedPinIds`); `RealtimeStoreUpdateInfo.updaterInfo` is **not** trusted for skip (dual preview often marks every update as “local”). Toast label uses store `name` / `oid` when updater metadata is unreliable.
-- **Debug logging:** `logPinInputDebug` → tap/pin-input traces. `logNetworkDebug` → RealtimeStore bind, key updates, spawn lines, toast trace, startup wiring hints (default off).
-- **Pin payload:** Store record includes `name` (Connected Lens `displayName`), optional `img` (JPEG base64 after Spectacles `require("LensStudio:CameraModule").requestImage` + `Base64.encodeTextureAsync`). No Camera Module asset; still capture is device-only (not Editor).
-- **Social UI:** Head-following world `Text` toast (`FlaneurToastFollowUi.js`) + collapsible screen sidebar pin list (`FlaneurSidebarPinListUi.js`). Reactions use store keys `react:<pinId>:<userId>` → `"0"|"1"|"2"`. Sidebar row prefab hierarchy uses (`PinPhoto`, `PinName`, `PinReacts`, `React0`…).
-- **Peer compasses (`FlaneurPeerCompass.js`):** Publishes head/camera position to `peer:<ownerId>` in **stored** space; `global.flaneurPinApi.worldPointToStored` / `storedPointToWorld` keep alignment with pins. Custom Location AR assets are optional visual/skin only—not required for sync.
-- **Helpers:** `shareSession` exposed on script; editor `touchSystem.touchBlocking` when in editor.
+- **RealtimeStore:** Session-scoped store id `flaneur_pins_v1`, unowned, with:
+  - `pin:<id>` — JSON records `{ id, oid, name, img?, x, y, z, t }` in markers-root **stored** space (or world if no root).
+  - `peer:<ownerId>` — live head/camera pose `{ x, y, z, t, n? }` for `FlaneurPeerCompass.js`.
+  - `nav:<peerCompassId>` — navigation target for that peer (peer id or pin id + label metadata); set/cleared via `global.flaneurPinApi` (`setNavTargetPeer`, `setNavTargetPin`, `clearNavTarget`, `getNavRecordForPeerCompassId`).
+  - `react:<pinId>:<userId>` → `"0"|"1"|"2"` for sidebar reactions.
+- **Markers:** Spawns from `pinTemplate`, parents under `markersRoot`; store updates rebuild remote keys. Successful commits can call `global.flaneurSfxPinDrop()` when UISFX is wired.
+- **Pin drop input:** `FlaneurPinInput.js` — respects UI flags and **`global.flaneurSuppressPinDropUntil`** (and related globals) so always-on **Navigate** / **Reset** buttons do not place pins. **Pin Drop From Global Screen Events** defaults **off**; primary path is **Pin Drop Interaction** plus optional **Trigger Primary**. With global screen events on, assign **Pin Drop UI Blocker Root** / **Extra** for `ScreenTransform.containsScreenPoint` hit-testing.
+- **Remote pin toasts:** Other clients’ drops raise the head toast via store-driven helpers on the markers script — skips pins this client originated (`localOriginatedPinIds`); `RealtimeStoreUpdateInfo.updaterInfo` is **not** trusted for skip in dual preview.
+- **Debug logging:** `logPinInputDebug` / `logNetworkDebug` on `FlaneurStorePins` (default off in shipped inputs).
+- **Pin payload:** `name` (Connected Lens `displayName`), optional `img` (JPEG base64 from Camera Module flow where available). Capture is device-focused (not Editor).
+- **Social / navigation UI:** `FlaneurToastFollowUi.js` (transient toasts). `FlaneurSidebarPinListUi.js` — collapsible pin list, static **pin row slots** (`pinRowSlot0`…`7`) recommended for reliable `RectangleButton` hits, **Navigation** block for persistent status, **Navigate** / **Reset** wired to globals. Per-row **`FlaneurPinRowNavCallback.js`** on `PinEntry.prefab` holds `pinId` / label for manual callback wiring.
+- **Peer compass (`FlaneurPeerCompass.js`):** Publishes to `peer:<ownerId>`; reads local `nav:<myId>` to aim at pin or peer; **`compassTargetText`** shows peer display name or possessive pin label. `global.flaneurPinApi` stored/world helpers align with pins.
+- **UI sound:** `FlaneurUiSfx.js` — assign three `AudioComponent` inputs on the UISFX SceneObject; globals for pin drop, any UI button path in sidebar/nav, and remote nav events.
+- **Helpers:** `shareSession` on store script; editor `touchSystem.touchBlocking` when in editor.
+
+**Removed / deprecated:** `FlaneurPinSocialUi.js` was deleted; responsibilities live in `FlaneurSidebarPinListUi.js` and related scripts.
 
 **Docs in repo:** `Flâneur.md` (product), `Flaneur dev plan.md` (deliverable + deep technical notes; file also contains embedded assets—prefer reading the first sections in an editor outline).
 
@@ -62,7 +70,7 @@ This file tracks what is built in Lens Studio versus the product spec (`Flâneur
 - With Sync Kit: `[Flaneur] No RealtimeStore yet. With Sync Kit: open Start Menu → Multiplayer (internet) or Singleplayer + Mocked Online; ...`
 - Standalone: `[Flaneur] No RealtimeStore yet. Flow: host runs lens → shares session → ...`
 
-**What to do in Lens Studio:** Start a mode that actually creates a Connected Lens session and store (e.g. Sync Kit **Multiplayer** with internet, or **Singleplayer + Mocked Online**). **Manual Singleplayer** without mock online does not give you `init()` / store—by design in Sync Kit. Turn on **Log Network Debug** on `FlaneurMultiplayerMarkers` to confirm `RealtimeStore bound` and key-update traces.
+**What to do in Lens Studio:** Start a mode that actually creates a Connected Lens session and store (e.g. Sync Kit **Multiplayer** with internet, or **Singleplayer + Mocked Online**). **Manual Singleplayer** without mock online does not give you `init()` / store—by design in Sync Kit. Turn on **Log Network Debug** on **`FlaneurStorePins`** to confirm `RealtimeStore bound` and key-update traces.
 
 **Other early exits (less common):** no `worldCamera` / scene camera → `[Flaneur] No camera; assign World Camera input.`; throttle `lastPinWallTime` drops bursts within 250 ms.
 
@@ -74,10 +82,10 @@ When drops succeed with **Log Pin Input Debug** on, you should also see `[Flaneu
 
 ## What is left to do (near-term, aligned with primary rule)
 
-1. **Shared pin loop** — largely validated (store bind, dual preview, remote markers + head toast). Continue to verify on-device Spectacles + multi-user sessions as needed.
-2. **Document the exact Sync Kit / Preview clicks** you use for class demos (single paragraph in this file or in script header once settled).
-3. **Compass / peer direction** — baseline HUD needles shipped (`FlaneurPeerCompass.js`); validate on two devices / dual preview; consider names-on-needles, distance readout, or world-space compasses later.
-4. **Guide me here (pin navigation target)** — pick a pin from the sidebar (or tap world pin) → set nav target → compass retarget + label; broadcast “navigating to …” toast to peers; add “clear target / back to peers” affordance.
+1. **Hardware + multi-user validation** — dual Spectacles / mixed device sessions; confirm `nav:` sync, Navigation line, and suppression under real touch latency.
+2. **Document the exact Sync Kit / Preview clicks** you use for class demos (short paragraph here or in `FlaneurStorePins.js` header).
+3. **Compass polish** — optional distance readout, needle labels for every peer, or world-anchored compass variants (current build is HUD + primary nav needle).
+4. **Optional:** tap **world-space pin** to set nav target (today: sidebar row is the primary path).
 5. **Custom Location fallback** — only when core multiplayer pins are reliable; see `SECONDARY-RULE-CUSTOM-LOCATIONS-SPECTACLES-RELIABILITY.mdc`.
 6. **Later (explicitly deferred):** world radial reactions, Meet Here, recap, Snap Cloud ghost pins, point systems—after the shared spatial loop is stable.
 
@@ -91,4 +99,5 @@ When drops succeed with **Log Pin Input Debug** on, you should also see `[Flaneu
 | 2026-04-16 | Pin visibility: force-enable spawned pin objects; enable `Tube` template; strip orphan peer script inputs from scene; log `Committed pin` on success. |
 | 2026-04-16 | `FlaneurPinSocialUi.js`: head toast, sidebar + badge, pin previews with Spectacles photo sync, reaction keys; markers extended for name + capture + `global.flaneurPinApi`. |
 | 2026-04-19 | Remote pin toasts (`localOriginatedPinIds`, ignore bogus `updaterInfo`); **Log Network Debug** gate; tracker pin-input defaults. **Peer compasses:** `FlaneurPeerCompass.js`, `peer:<ownerId>` store keys, `flaneurPinApi` stored/world helpers. Custom Location AR = optional skin only. |
+| 2026-04-27 | **Guide me here:** `nav:<peerCompassId>` in `FlaneurStorePins.js`; compass retarget + possessive labels in `FlaneurPeerCompass.js`; sidebar nav via `FlaneurPinRowNavCallback.js` + static row slots in `FlaneurSidebarPinListUi.js`; persistent **Navigation/Text**; **Navigate** / **Reset**; pin-drop suppression; `FlaneurUiSfx.js`. Tracker documents **`FlaneurStorePins.js`** as the primary store/markers script (scene object may still be named `FlaneurMultiplayerMarkers`). **`FlaneurPinSocialUi.js` removed.** |
 
