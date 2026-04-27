@@ -2,6 +2,9 @@
 
 This file tracks what is built in Lens Studio versus the product spec (`Flâneur.md`) and course deliverable notes (`Flaneur dev plan.md`). Update it as milestones land.
 
+## MVP idea to preserve (navigation without texting)
+
+**Guide me here (pin navigation target):** tap/select a pin → “Guide me here” → your compass arrow retargets to that pin and shows the pin name under the arrow. Default target remains “other friend / peers” when no pin is selected. When one person sets a navigation target, other peers see a secondary toast like “Jessica is navigating to ‘Ramen Stall’” (and optionally a quick action to navigate to the same pin).
 ---
 
 ## Product snapshot (why this exists)
@@ -20,6 +23,7 @@ This file tracks what is built in Lens Studio versus the product spec (`Flâneur
 | 2 Compass Wake | **In progress** — `FlaneurPeerCompass.js`: RealtimeStore `peer:<id>` poses + HUD needles (horizontal bearing); same frame as pins. |
 | 3 Ghost Reveal (return visit) | **Blocked** until core loop + Custom Location / cloud story |
 | 4 Exploration — Pinning | **In progress** (store + markers + photo metadata + UI list) |
+| 4b Navigation — Guide me here | **Planned (MVP add-on)** — select pin → retarget compass + show target label; broadcast “navigating to …” toast to peers |
 | 5 Exploration — Reacting | **Partial** (three synced reactions on sidebar rows; not world radial) |
 | 6 Meet Here | **Blocked** by primary rule |
 | 7 Session End | **Not started** |
@@ -39,7 +43,7 @@ This file tracks what is built in Lens Studio versus the product spec (`Flâneur
 - **Remote pin toasts:** Other clients’ drops raise the head toast via `FlaneurMultiplayerMarkers.maybeNotifyRemotePinDropFromStoreKey` — skips only pins this client originated (`localOriginatedPinIds`); `RealtimeStoreUpdateInfo.updaterInfo` is **not** trusted for skip (dual preview often marks every update as “local”). Toast label uses store `name` / `oid` when updater metadata is unreliable.
 - **Debug logging:** `logPinInputDebug` → tap/pin-input traces. `logNetworkDebug` → RealtimeStore bind, key updates, spawn lines, toast trace, startup wiring hints (default off).
 - **Pin payload:** Store record includes `name` (Connected Lens `displayName`), optional `img` (JPEG base64 after Spectacles `require("LensStudio:CameraModule").requestImage` + `Base64.encodeTextureAsync`). No Camera Module asset; still capture is device-only (not Editor).
-- **Social UI (`FlaneurPinSocialUi.js`):** Head-following world `Text` toast (via `toastAnchor` + offsets), collapsible screen sidebar (FAB + count badge + scroll list), row prefab with photo/name/reactions. Reactions use store keys `react:<pinId>:<userId>` → `"0"|"1"|"2"`. See script header for hierarchy naming (`PinPhoto`, `PinName`, `PinReacts`, `React0`…).
+- **Social UI:** Head-following world `Text` toast (`FlaneurToastFollowUi.js`) + collapsible screen sidebar pin list (`FlaneurSidebarPinListUi.js`). Reactions use store keys `react:<pinId>:<userId>` → `"0"|"1"|"2"`. Sidebar row prefab hierarchy uses (`PinPhoto`, `PinName`, `PinReacts`, `React0`…).
 - **Peer compasses (`FlaneurPeerCompass.js`):** Publishes head/camera position to `peer:<ownerId>` in **stored** space; `global.flaneurPinApi.worldPointToStored` / `storedPointToWorld` keep alignment with pins. Custom Location AR assets are optional visual/skin only—not required for sync.
 - **Helpers:** `shareSession` exposed on script; editor `touchSystem.touchBlocking` when in editor.
 
@@ -73,8 +77,9 @@ When drops succeed with **Log Pin Input Debug** on, you should also see `[Flaneu
 1. **Shared pin loop** — largely validated (store bind, dual preview, remote markers + head toast). Continue to verify on-device Spectacles + multi-user sessions as needed.
 2. **Document the exact Sync Kit / Preview clicks** you use for class demos (single paragraph in this file or in script header once settled).
 3. **Compass / peer direction** — baseline HUD needles shipped (`FlaneurPeerCompass.js`); validate on two devices / dual preview; consider names-on-needles, distance readout, or world-space compasses later.
-4. **Custom Location fallback** — only when core multiplayer pins are reliable; see `SECONDARY-RULE-CUSTOM-LOCATIONS-SPECTACLES-RELIABILITY.mdc`.
-5. **Later (explicitly deferred):** world radial reactions, Meet Here, recap, Snap Cloud ghost pins, point systems—after the shared spatial loop is stable.
+4. **Guide me here (pin navigation target)** — pick a pin from the sidebar (or tap world pin) → set nav target → compass retarget + label; broadcast “navigating to …” toast to peers; add “clear target / back to peers” affordance.
+5. **Custom Location fallback** — only when core multiplayer pins are reliable; see `SECONDARY-RULE-CUSTOM-LOCATIONS-SPECTACLES-RELIABILITY.mdc`.
+6. **Later (explicitly deferred):** world radial reactions, Meet Here, recap, Snap Cloud ghost pins, point systems—after the shared spatial loop is stable.
 
 ---
 

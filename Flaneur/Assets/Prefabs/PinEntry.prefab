@@ -34,11 +34,8 @@
     _shadowPositionOffset: true
     _toggleable: true
     _defaultToOn: true
-    addCallbacks: true
-    triggerUpCallbacks: true
     triggerDownCallbacks: true
     onValueChangeCallbacks: true
-    onFinishedCallbacks: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -52,15 +49,17 @@
       _shadowPositionOffset: !<Vec3> {x: 0.050000, y: -0.050000, z: -0.010000}
       _toggleable: false
       _defaultToOn: false
-      addCallbacks: false
+      addCallbacks: true
       triggerUpCallbacks:
-        []
+        - scriptComponent: !<reference.ScriptComponent> 7e2f24be-843c-4643-9145-bc0f14bd6dbf
+          functionName: flaneurNavToMe
       triggerDownCallbacks:
         []
       onValueChangeCallbacks:
         []
       onFinishedCallbacks:
-        []
+        - scriptComponent: !<reference.ScriptComponent> 7e2f24be-843c-4643-9145-bc0f14bd6dbf
+          functionName: flaneurNavToMe
   ScriptTypes:
     "":
       {}
@@ -105,9 +104,10 @@
     - 60e7a3b2-d974-46af-aa95-b91189c54234: 60e7a3b2-d974-46af-556a-46ee763abdcb
     - 67596590-9967-4f09-a834-b01ae04a065c: 67596590-9967-4f09-57cb-4fe51fb5f9a3
     - 78f354c2-9bf4-47a3-98a7-2fd01c17582d: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
+    - 7e2f24be-843c-4643-9145-bc0f14bd6dbf: 36e82636-a353-432e-8399-b067b3cfca60
     - 8153e616-c268-4ff6-ab23-e77080620fe1: 8153e616-c268-4ff6-54dc-188f7f9df01e
   Name: PinEntry
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -119,6 +119,25 @@
     - !<own> 60e7a3b2-d974-46af-aa95-b91189c54234
   Components:
     - !<own> 5783fe4e-314a-44a1-8455-dd80079b54a8
+    - !<own> 7e2f24be-843c-4643-9145-bc0f14bd6dbf
+- !<ScriptComponent/7e2f24be-843c-4643-9145-bc0f14bd6dbf>
+  PrefabRemaps:
+    []
+  Name: FlaneurPinRowNavCallback
+  Enabled: true
+  ScriptAsset: !<reference> a6878923-9ead-4d7b-9477-3ad4af0cf65d
+  ScriptInputsDefault:
+    pinId: true
+    pinLabel: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      pinId: ""
+      pinLabel: ""
+  ScriptTypes:
+    "":
+      {}
 - !<Text/8153e616-c268-4ff6-ab23-e77080620fe1>
   PrefabRemaps:
     []

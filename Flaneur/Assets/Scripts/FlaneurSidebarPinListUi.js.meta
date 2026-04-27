@@ -26,9 +26,20 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    directly: false
     headFollowUiRoot: false
     logUiDebug: false
+    navigationRoot: false
+    navigationTargetText: false
     pinEntryPrefab: false
+    pinRowSlot0: false
+    pinRowSlot1: false
+    pinRowSlot2: false
+    pinRowSlot3: false
+    pinRowSlot4: false
+    pinRowSlot5: false
+    pinRowSlot6: false
+    pinRowSlot7: false
     sidebarBranchRoot: false
     sidebarCloseIconTexture: false
     sidebarCountBadge: false
@@ -51,10 +62,21 @@
       sidebarPanel: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       sidebarBranchRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       sidebarListRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      navigationRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      navigationTargetText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       pinEntryPrefab: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot0: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot1: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot2: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot3: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot4: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot5: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot6: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pinRowSlot7: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       sidebarCloseIconTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
       headFollowUiRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       logUiDebug: false
+      directly: !<RequiredType.fields> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}

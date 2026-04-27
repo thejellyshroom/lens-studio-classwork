@@ -29,6 +29,24 @@
     []
   Components:
     - !<own> 67596590-9967-4f09-57cb-4fe51fb5f9a3
+- !<ScriptComponent/36e82636-a353-432e-8399-b067b3cfca60>
+  PrefabRemaps:
+    []
+  Name: FlaneurPinRowNavCallback
+  Enabled: true
+  ScriptAsset: !<reference> a6878923-9ead-4d7b-9477-3ad4af0cf65d
+  ScriptInputsDefault:
+    pinId: true
+    pinLabel: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      pinId: ""
+      pinLabel: ""
+  ScriptTypes:
+    "":
+      {}
 - !<ScriptComponent/5783fe4e-314a-44a1-7baa-227ff864ab57>
   PrefabRemaps:
     []
@@ -44,11 +62,8 @@
     _shadowPositionOffset: true
     _toggleable: true
     _defaultToOn: true
-    addCallbacks: true
-    triggerUpCallbacks: true
     triggerDownCallbacks: true
     onValueChangeCallbacks: true
-    onFinishedCallbacks: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -62,15 +77,17 @@
       _shadowPositionOffset: !<Vec3> {x: 0.050000, y: -0.050000, z: -0.010000}
       _toggleable: false
       _defaultToOn: false
-      addCallbacks: false
+      addCallbacks: true
       triggerUpCallbacks:
-        []
+        - scriptComponent: !<reference.ScriptComponent> 36e82636-a353-432e-8399-b067b3cfca60
+          functionName: flaneurNavToMe
       triggerDownCallbacks:
         []
       onValueChangeCallbacks:
         []
       onFinishedCallbacks:
-        []
+        - scriptComponent: !<reference.ScriptComponent> 36e82636-a353-432e-8399-b067b3cfca60
+          functionName: flaneurNavToMe
   ScriptTypes:
     "":
       {}
@@ -112,7 +129,7 @@
   PrefabRemaps:
     []
   Name: PinEntry
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -124,6 +141,7 @@
     - !<own> 60e7a3b2-d974-46af-556a-46ee763abdcb
   Components:
     - !<own> 5783fe4e-314a-44a1-7baa-227ff864ab57
+    - !<own> 36e82636-a353-432e-8399-b067b3cfca60
 - !<Text/8153e616-c268-4ff6-54dc-188f7f9df01e>
   PrefabRemaps:
     []

@@ -45,9 +45,11 @@
 // @input float stackSpacing = 6
 // @input bool peerCompassEnabled = true
 // @input bool compassBearingHorizontalOnly = false
+// @input Component.Text compassTargetText {"label":"Compass > Text (shows current nav target label)"}
 // @input bool logCompassDebug = false
 
 var PEER_PREFIX = "peer:";
+var NAV_PREFIX = "nav:";
 var lastPublishTime = -999;
 var peerNeedles = {};
 var warnedMissingTemplate = false;
@@ -57,12 +59,86 @@ var lastCompassStatusLog = -999;
 var lastHudDebugLog = -999;
 var NEEDLE_WORLD_SCALE_FALLBACK = 0.1;
 
+var navNeedleId = "__nav__";
+var warnedMissingCompassTargetText = false;
+var lastNavDebugLog = -999;
+
 function getNeedleWorldUniformScale() {
   var sc = script.needleUniformScale;
   if (sc === undefined || sc === null || sc <= 0) {
     return NEEDLE_WORLD_SCALE_FALLBACK;
   }
   return sc;
+}
+
+function safeJsonParse(s) {
+  if (!s || typeof s !== "string") return null;
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    return null;
+  }
+}
+
+function safeString(s) {
+  if (s == null) return "";
+  return String(s);
+}
+
+function degToRad(deg) {
+  return (deg || 0) * Math.PI / 180;
+}
+
+function possessivePinLabel(name) {
+  var n = safeString(name || "");
+  if (!n) return "Pin";
+  var lower = n.toLowerCase();
+  var suffix = lower.length > 0 && lower[lower.length - 1] === "s" ? "'" : "'s";
+  return n + suffix + " pin";
+}
+
+function findNamed(so, name) {
+  if (!so || isNull(so)) return null;
+  if (so.name === name) return so;
+  var n = 0;
+  try {
+    n = so.getChildrenCount();
+  } catch (eN) {
+    n = 0;
+  }
+  for (var i = 0; i < n; i++) {
+    var f = findNamed(so.getChild(i), name);
+    if (f) return f;
+  }
+  return null;
+}
+
+function tryAutoBindCompassTargetText() {
+  if (script.compassTargetText && !isNull(script.compassTargetText)) return true;
+  // Heuristic: user said it's under Compass > Text.
+  var mount = script.compassMount;
+  var compassSo = null;
+  if (mount && !isNull(mount)) {
+    compassSo = mount.getParent(); // often Compass is parent of mount/needles
+    if (compassSo && !isNull(compassSo) && String(compassSo.name).toLowerCase().indexOf("compass") < 0) {
+      compassSo = mount;
+    }
+  }
+  var textSo = findNamed(compassSo, "Text") || findNamed(script.getSceneObject(), "Text");
+  if (!textSo || isNull(textSo)) return false;
+  var txt = textSo.getComponent("Component.Text") || textSo.getComponent("Text");
+  if (!txt) return false;
+  script.compassTargetText = txt;
+  return true;
+}
+
+function setCompassTargetText(label) {
+  if (!script.compassTargetText || isNull(script.compassTargetText)) {
+    if (!tryAutoBindCompassTargetText()) return;
+  }
+  try {
+    script.compassTargetText.text = label || "";
+  } catch (e) {}
 }
 
 /** Big meshes often live on children with inflated localScale; normalize so world scale input actually bites. */
@@ -381,7 +457,7 @@ function aimNeedleWorldPlusZAtDirection(needleSo, dirWorld) {
   }
   try {
     if (Math.abs(rx) > 1e-4) {
-      var qTilt = quat.fromEulerAngles(rx, 0, 0);
+      var qTilt = quat.fromEulerAngles(degToRad(rx), 0, 0);
       q = q.multiply(qTilt);
     }
     tr.setWorldRotation(q);
@@ -416,6 +492,16 @@ function updatePeerNeedlesLayout() {
       print("[Flaneur][compass] Assign Needle Template (disabled SceneObject, +Z forward).");
     }
     return;
+  }
+
+  // Determine a local navigation target from the store (set by UI).
+  var navRec = safeJsonParse(store.getString(NAV_PREFIX + myId));
+  var wantNav = navRec && navRec.type && navRec.type !== "none";
+  if (!script.compassTargetText || isNull(script.compassTargetText)) {
+    if (script.logCompassDebug && !warnedMissingCompassTargetText) {
+      warnedMissingCompassTargetText = true;
+      print("[Flaneur][compass] Assign Compass Target Text input (Compass > Text) to show target label.");
+    }
   }
 
   var keys = store.getAllKeys();
@@ -468,6 +554,92 @@ function updatePeerNeedlesLayout() {
   var debugFirstPeerDistH = -1;
   var dbgSpawnMiss = false;
 
+  // Default target text behavior (your request):
+  // - If no explicit nav target is set, show the "other peer" name (first available).
+  if (!wantNav) {
+    var defaultLabel = "";
+    if (peerIds.length > 0) {
+      try {
+        var pj = store.getString(PEER_PREFIX + peerIds[0]);
+        var pd = safeJsonParse(pj);
+        if (pd && pd.n) defaultLabel = safeString(pd.n);
+      } catch (eD) {}
+      if (!defaultLabel) defaultLabel = "Friend";
+    }
+    setCompassTargetText(defaultLabel);
+  }
+
+  // If we're navigating to something specific, show a single primary needle at the top.
+  if (wantNav) {
+    var navNeedle = peerNeedles[navNeedleId];
+    if (!navNeedle || isNull(navNeedle)) {
+      navNeedle = spawnNeedleForPeer(navNeedleId);
+    }
+    if (navNeedle && !isNull(navNeedle)) {
+      seen[navNeedleId] = true;
+      navNeedle.enabled = true;
+      try {
+        navNeedle.getTransform().setLocalPosition(new vec3(0, 0, 0));
+      } catch (eLP) {}
+
+      var navLabel = safeString(navRec.label || "");
+      var targetWorld = null;
+
+      if (navRec.type === "peer" && navRec.peerId) {
+        var peerJson = store.getString(PEER_PREFIX + String(navRec.peerId));
+        var peerData = safeJsonParse(peerJson);
+        if (peerData && typeof peerData.x === "number") {
+          targetWorld = api.storedPointToWorld(new vec3(peerData.x, peerData.y, peerData.z));
+          if (!navLabel) navLabel = safeString(peerData.n || "Friend");
+        }
+      } else if (navRec.type === "pin" && navRec.pinId && api.pinPrefix) {
+        var pinJson = store.getString(String(api.pinPrefix) + String(navRec.pinId));
+        var pinData = safeJsonParse(pinJson);
+        if (pinData && typeof pinData.x === "number") {
+          targetWorld = api.storedPointToWorld(new vec3(pinData.x, pinData.y, pinData.z));
+          // For pins, show "<owner>'s pin" rather than the raw pin label.
+          navLabel = possessivePinLabel(pinData.name || navLabel || "Pin");
+        }
+      }
+
+      setCompassTargetText(navLabel);
+      if (targetWorld) {
+        // Use the user's head/camera as the bearing origin. The needle itself is a camera-attached HUD object,
+        // so using the needle's HUD world position can skew direction as the HUD mount moves.
+        var navDir = directionWorldToPeer(camPos, targetWorld, flatOnly);
+        if (navDir) {
+          aimNeedleWorldPlusZAtDirection(navNeedle, navDir);
+        }
+        if (script.logCompassDebug) {
+          var tNavLog = getTime();
+          if (tNavLog - lastNavDebugLog > 1.0) {
+            lastNavDebugLog = tNavLog;
+            dbgCompass(
+              "nav type=" +
+                navRec.type +
+                " label=" +
+                navLabel +
+                " target=" +
+                targetWorld.x.toFixed(2) +
+                "," +
+                targetWorld.y.toFixed(2) +
+                "," +
+                targetWorld.z.toFixed(2) +
+                " cam=" +
+                camPos.x.toFixed(2) +
+                "," +
+                camPos.y.toFixed(2) +
+                "," +
+                camPos.z.toFixed(2) +
+                " dir=" +
+                (navDir ? navDir.x.toFixed(2) + "," + navDir.y.toFixed(2) + "," + navDir.z.toFixed(2) : "null")
+            );
+          }
+        }
+      }
+    }
+  }
+
   for (i = 0; i < peerIds.length; i++) {
     var id = peerIds[i];
     seen[id] = true;
@@ -508,10 +680,11 @@ function updatePeerNeedlesLayout() {
     }
     needle.enabled = true;
     var tr = needle.getTransform();
-    tr.setLocalPosition(new vec3(0, i * spacing, 0));
+    // Stack peer needles below nav needle if it exists.
+    var stackIndex = wantNav ? i + 1 : i;
+    tr.setLocalPosition(new vec3(0, stackIndex * spacing, 0));
     applyNeedleHudWorldSize(needle);
-    var needleW = needle.getTransform().getWorldPosition();
-    var dir = directionWorldToPeer(needleW, peerWorld, flatOnly);
+    var dir = directionWorldToPeer(camPos, peerWorld, flatOnly);
     if (dir === null) {
       try {
         tr.setLocalRotation(quat.fromEulerAngles(0, 0, 0));

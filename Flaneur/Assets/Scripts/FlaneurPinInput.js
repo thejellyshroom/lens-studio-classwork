@@ -57,6 +57,15 @@ function collectBlockersFromRoot(root, outArr) {
   for (var i = 0; i < n; i++) collectBlockersFromRoot(root.getChild(i), outArr);
 }
 
+function getGlobalNavigationUiRoot() {
+  try {
+    if (typeof global !== "undefined" && global.flaneurNavigationUiRoot && !isNull(global.flaneurNavigationUiRoot)) {
+      return global.flaneurNavigationUiRoot;
+    }
+  } catch (eRoot) {}
+  return null;
+}
+
 function refreshUiBlockersIfNeeded(force) {
   var now = getTime();
   if (!force && !blockersDirty && now - lastBlockerScanTime < 1.0) return;
@@ -65,6 +74,7 @@ function refreshUiBlockersIfNeeded(force) {
   blockers = [];
   collectBlockersFromRoot(script.pinDropUiBlockerRoot, blockers);
   if (script.pinDropUiBlockerRootExtra && !isNull(script.pinDropUiBlockerRootExtra)) collectBlockersFromRoot(script.pinDropUiBlockerRootExtra, blockers);
+  collectBlockersFromRoot(getGlobalNavigationUiRoot(), blockers);
 }
 
 function screen01ToScreenPx(screen01, cam) {
@@ -141,8 +151,60 @@ function isTapOverPinDropUiBlocker(screen01) {
   return false;
 }
 
+function isTapOverNavigationUi(screen01) {
+  var navRoot = getGlobalNavigationUiRoot();
+  if (!isValidSo(navRoot) || !navRoot.enabled) return false;
+  var cam = tryGetScreenSpaceCamera();
+  if (!cam) return false;
+  var screenPx = screen01ToScreenPx(screen01, cam);
+  var r = Math.max(script.pinDropWorldUiBlockScreenRadius || 0.0, 0.18);
+  var rPx = r * Math.max(cam.getViewportWidth(), cam.getViewportHeight());
+  var rPx2 = rPx * rPx;
+  var stack = [navRoot];
+  var visited = 0;
+  while (stack.length > 0 && visited < 500) {
+    var so = stack.pop();
+    visited++;
+    if (!isValidSo(so) || !so.enabled) continue;
+    try {
+      var sp01 = null;
+      var wpos = so.getTransform().getWorldPosition();
+      if (cam.worldSpaceToScreenSpace) sp01 = cam.worldSpaceToScreenSpace(wpos);
+      else if (cam.project) {
+        var sp = cam.project(wpos);
+        sp01 = screenPxToScreen01(new vec2(sp.x, sp.y), cam);
+      }
+      if (sp01) {
+        var spPx = screen01ToScreenPx(new vec2(sp01.x, sp01.y), cam);
+        if (dist2(spPx, screenPx) <= rPx2) return true;
+      }
+    } catch (eProj) {}
+    try {
+      var n = so.getChildrenCount();
+      for (var i = 0; i < n; i++) stack.push(so.getChild(i));
+    } catch (eChildren) {}
+  }
+  return false;
+}
+
 function pinIsAllowedAtScreen01(screen01) {
+  try {
+    if (typeof global !== "undefined") {
+      if (global.flaneurUiPressActive === true) {
+        dbg("Blocked pin drop (uiPressActive).");
+        return false;
+      }
+      if (global.flaneurSuppressPinDropUntil && getTime() < global.flaneurSuppressPinDropUntil) {
+        dbg("Blocked pin drop (suppressed).");
+        return false;
+      }
+    }
+  } catch (eUi) {}
   refreshUiBlockersIfNeeded(false);
+  if (isTapOverNavigationUi(screen01)) {
+    dbg("Blocked pin drop (navigation UI).");
+    return false;
+  }
   if (isTapOverPinDropUiBlocker(screen01)) return false;
   return true;
 }

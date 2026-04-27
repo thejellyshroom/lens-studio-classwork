@@ -33,6 +33,7 @@
     compassHudLocalZ: false
     compassMount: false
     compassNeedleExtraEulerX: false
+    compassTargetText: false
     limitCompassByDistance: false
     logCompassDebug: false
     maxWorldDistance: false
@@ -70,6 +71,7 @@
       stackSpacing: !<float> 14.000000
       peerCompassEnabled: true
       compassBearingHorizontalOnly: false
+      compassTargetText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       logCompassDebug: false
   ScriptTypes:
     -

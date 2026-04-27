@@ -27,6 +27,7 @@
 var FLANEUR_STORE_ID = "flaneur_pins_v1";
 var PIN_KEY_PREFIX = "pin:";
 var REACT_KEY_PREFIX = "react:";
+var NAV_KEY_PREFIX = "nav:";
 
 var options = ConnectedLensSessionOptions.create();
 options.onConnected = onConnected;
@@ -62,6 +63,27 @@ var pinDropToastPendingMsgs = [];
 var pinDropToastFlushEv = null;
 
 var flaneurPeerCompassClientNonce = "";
+
+function navKeyForPeerCompassId(peerCompassId) {
+  return NAV_KEY_PREFIX + String(peerCompassId || "");
+}
+
+function safeJsonParse(s) {
+  if (!s || typeof s !== "string") return null;
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    return null;
+  }
+}
+
+function safeLabel(s) {
+  if (s == null) return "";
+  var t = String(s);
+  // Keep it short enough for HUD labels.
+  if (t.length > 32) return t.substring(0, 32) + "…";
+  return t;
+}
 
 function dbgNet(msg) {
   if (script.logNetworkDebug) print(msg);
@@ -332,12 +354,69 @@ function publishGlobalApi() {
       getStore: function () { return flaneurStore; },
       pinPrefix: PIN_KEY_PREFIX,
       reactPrefix: REACT_KEY_PREFIX,
+      navPrefix: NAV_KEY_PREFIX,
       getLocalUserId: function () { return getFlaneurPinOwnerIdForStore(); },
       getLocalDisplayName: function () { return localDisplayName; },
       getPeerCompassStoreId: function () {
         if (localConnectionId && String(localConnectionId).length > 0) return String(localConnectionId);
         ensurePeerCompassClientNonce();
         return String(getFlaneurPinOwnerIdForStore()) + "~" + flaneurPeerCompassClientNonce;
+      },
+      setNavTargetPeer: function (peerCompassId, label) {
+        if (!flaneurStore) return false;
+        var selfPcId = global.flaneurPinApi.getPeerCompassStoreId();
+        if (!selfPcId) return false;
+        var rec = {
+          type: "peer",
+          peerId: String(peerCompassId || ""),
+          label: safeLabel(label || ""),
+          t: getTime(),
+        };
+        try {
+          flaneurStore.putString(navKeyForPeerCompassId(selfPcId), JSON.stringify(rec));
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      setNavTargetPin: function (pinId, label) {
+        if (!flaneurStore) return false;
+        var selfPcId = global.flaneurPinApi.getPeerCompassStoreId();
+        if (!selfPcId) return false;
+        var rec = {
+          type: "pin",
+          pinId: String(pinId || ""),
+          label: safeLabel(label || ""),
+          t: getTime(),
+        };
+        try {
+          flaneurStore.putString(navKeyForPeerCompassId(selfPcId), JSON.stringify(rec));
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      clearNavTarget: function () {
+        if (!flaneurStore) return false;
+        var selfPcId = global.flaneurPinApi.getPeerCompassStoreId();
+        if (!selfPcId) return false;
+        try {
+          flaneurStore.putString(
+            navKeyForPeerCompassId(selfPcId),
+            JSON.stringify({ type: "none", label: "", t: getTime() })
+          );
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      getNavRecordForPeerCompassId: function (peerCompassId) {
+        if (!flaneurStore) return null;
+        var k = navKeyForPeerCompassId(peerCompassId);
+        var s = flaneurStore.getString(k);
+        var rec = safeJsonParse(s);
+        if (!rec || typeof rec !== "object") return null;
+        return rec;
       },
       worldPointToStored: function (worldPos) { return worldPointToStoredVec3(worldPos); },
       storedPointToWorld: function (storedVec3) { return storedVec3ToWorldPos(storedVec3); }
@@ -662,6 +741,12 @@ function upsertPinInStore(record) { flaneurStore.putString(PIN_KEY_PREFIX + reco
 var lastPinWallTime = -999;
 function commitPinAtWorldPosition(worldVec3) {
   if (!worldVec3) return;
+  try {
+    if (typeof global !== "undefined" && global.flaneurSuppressPinDropUntil && getTime() < global.flaneurSuppressPinDropUntil) {
+      dbgPin("Blocked pin commit (suppressed).");
+      return;
+    }
+  } catch (eSup) {}
   if (!flaneurStore) {
     dbgPin("flaneurCommitPinAtWorldPosition: no RealtimeStore.");
     return;
