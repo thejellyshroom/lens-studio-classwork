@@ -42,6 +42,16 @@
     pinDropUseWorldUiProjectionBlock: false
     pinDropWorldUiBlockScreenRadius: false
     placementDepth: false
+    placementPreviewCircleSegments: false
+    placementPreviewEnabled: false
+    placementPreviewGenerateCircle: false
+    placementPreviewParent: false
+    placementPreviewRayMaxLength: false
+    placementPreviewRayTemplate: false
+    placementPreviewRayThickness: false
+    placementPreviewReticleCircleThickness: false
+    placementPreviewReticleScale: false
+    placementPreviewReticleTemplate: false
     worldCamera: false
     worldMeshRayDistance: false
   ScriptTypesHidden:
@@ -70,6 +80,16 @@
       pinDropWorldUiBlockScreenRadius: 0.110000
       pinDropUiWorldProjectionSampleBudget: 400
       pinDropUiScreenSpaceCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      placementPreviewEnabled: true
+      placementPreviewParent: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      placementPreviewReticleTemplate: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      placementPreviewRayTemplate: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      placementPreviewGenerateCircle: true
+      placementPreviewReticleScale: 0.350000
+      placementPreviewReticleCircleThickness: 0.060000
+      placementPreviewCircleSegments: 48
+      placementPreviewRayThickness: 0.030000
+      placementPreviewRayMaxLength: !<float> 400.000000
       logPinInputDebug: false
   ScriptTypes:
     -

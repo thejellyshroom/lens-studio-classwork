@@ -16,6 +16,13 @@ assert.match(source, /commitWorldMeshFromRay/, "FlaneurPinInput should raycast t
 assert.match(source, /lastSikRay[\s\S]*commitWorldMeshFromRay[\s\S]*lastSikRay = null;[\s\S]*return;/, "SIK release should not fall back to center-screen placement after a hand ray miss.");
 assert.match(source, /flaneurPinIsSidebarOpen/, "FlaneurPinInput should block pin drops while the sidebar is open.");
 assert.match(source, /flaneurPinIsMeshPinSuppressedAfterSidebarClose/, "FlaneurPinInput should honor sidebar-close mesh pin suppression.");
+assert.match(source, /@input SceneObject placementPreviewReticleTemplate/, "FlaneurPinInput should support a world-mesh hit preview reticle.");
+assert.match(source, /placementPreviewReticleCircleThickness/, "FlaneurPinInput should flatten the reticle into a circle/puck marker.");
+assert.match(source, /MeshBuilder/, "FlaneurPinInput should generate a true circular reticle mesh instead of reusing the tube mesh.");
+assert.match(source, /createGeneratedCircleReticle/, "FlaneurPinInput should create the generated circle reticle at runtime.");
+assert.match(source, /makeCircleMesh\(reticleScale, segments\)/, "Generated circle size should come from placementPreviewReticleScale.");
+assert.match(source, /updatePlacementPreviewFromRay/, "FlaneurPinInput should update preview visuals from the active hand ray.");
+assert.match(source, /hidePlacementPreview/, "FlaneurPinInput should hide preview visuals when no valid hand/world-mesh target exists.");
 assert.match(source, /getCameraViewportSize/, "FlaneurPinInput should guard camera viewport helpers on Spectacles.");
 assert.match(source, /typeof cam\.getViewportWidth === "function"/, "FlaneurPinInput should check viewport methods before calling them.");
 assert.match(source, /No world mesh hit/, "FlaneurPinInput should log no-hit cases when debug logging is enabled.");

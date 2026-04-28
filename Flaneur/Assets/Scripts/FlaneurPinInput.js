@@ -30,6 +30,16 @@
 // @input float pinDropWorldUiBlockScreenRadius = 0.11
 // @input int pinDropUiWorldProjectionSampleBudget = 400
 // @input Component.Camera pinDropUiScreenSpaceCamera
+// @input bool placementPreviewEnabled = true
+// @input SceneObject placementPreviewParent
+// @input SceneObject placementPreviewReticleTemplate
+// @input SceneObject placementPreviewRayTemplate
+// @input bool placementPreviewGenerateCircle = true
+// @input float placementPreviewReticleScale = 0.35
+// @input float placementPreviewReticleCircleThickness = 0.06
+// @input int placementPreviewCircleSegments = 48
+// @input float placementPreviewRayThickness = 0.03
+// @input float placementPreviewRayMaxLength = 400.0
 // @input bool logPinInputDebug = false
 
 var blockers = [];
@@ -43,6 +53,8 @@ var sikModulesAttempted = false;
 var sikTriggerActive = false;
 var lastSikRay = null;
 var lastSikStatusLog = -999;
+var placementPreviewReticle = null;
+var placementPreviewRay = null;
 
 function dbg(msg) {
   if (script.logPinInputDebug) print("[Flaneur][pin-input] " + msg);
@@ -237,6 +249,191 @@ function getRayFromSikInteractor(interactor) {
     }
   } catch (ePoints) {}
   return null;
+}
+
+function getPlacementPreviewParent() {
+  if (script.placementPreviewParent && !isNull(script.placementPreviewParent)) return script.placementPreviewParent;
+  return script.getSceneObject();
+}
+
+function createPreviewCopy(template, name) {
+  if (!template || isNull(template)) return null;
+  var parent = getPlacementPreviewParent();
+  var so = null;
+  try {
+    so = parent.copySceneObject(template);
+  } catch (eCopyParent) {
+    try {
+      so = script.getSceneObject().copySceneObject(template);
+    } catch (eCopySelf) {
+      so = null;
+    }
+  }
+  if (!so || isNull(so)) return null;
+  try {
+    so.name = name;
+  } catch (eName) {}
+  try {
+    so.setParent(parent);
+  } catch (eParent) {}
+  so.enabled = false;
+  return so;
+}
+
+function getPlacementPreviewReticle() {
+  if (placementPreviewReticle && !isNull(placementPreviewReticle)) return placementPreviewReticle;
+  if (script.placementPreviewGenerateCircle !== false) {
+    placementPreviewReticle = createGeneratedCircleReticle();
+    if (placementPreviewReticle && !isNull(placementPreviewReticle)) return placementPreviewReticle;
+  }
+  placementPreviewReticle = createPreviewCopy(script.placementPreviewReticleTemplate, "FlaneurPlacementReticle");
+  return placementPreviewReticle;
+}
+
+function getTemplateMaterial(template) {
+  if (!template || isNull(template)) return null;
+  try {
+    var rmv = template.getComponent("Component.RenderMeshVisual") || template.getComponent("RenderMeshVisual");
+    if (rmv && !isNull(rmv) && rmv.mainMaterial) return rmv.mainMaterial;
+  } catch (eRmv) {}
+  return null;
+}
+
+function makeCircleMesh(radius, segments) {
+  var builder = new MeshBuilder([{ name: "position", components: 3 }]);
+  builder.topology = MeshTopology.Triangles;
+  builder.indexType = MeshIndexType.UInt16;
+  var vertices = [0, 0, 0];
+  var indices = [];
+  for (var i = 0; i <= segments; i++) {
+    var a = (i / segments) * Math.PI * 2;
+    vertices.push(Math.cos(a) * radius, Math.sin(a) * radius, 0);
+  }
+  for (var j = 1; j <= segments; j++) {
+    indices.push(0, j, j + 1);
+  }
+  builder.appendIndices(indices);
+  builder.appendVerticesInterleaved(vertices);
+  builder.updateMesh();
+  return builder.getMesh();
+}
+
+function createGeneratedCircleReticle() {
+  var parent = getPlacementPreviewParent();
+  var so = scene.createSceneObject("FlaneurPlacementCircle");
+  so.setParent(parent);
+  so.enabled = false;
+  try {
+    var rmv = so.createComponent("Component.RenderMeshVisual");
+    var mat = getTemplateMaterial(script.placementPreviewReticleTemplate);
+    if (mat) {
+      rmv.clearMaterials();
+      rmv.mainMaterial = mat;
+    }
+    var segments = Math.max(12, Math.floor(script.placementPreviewCircleSegments || 48));
+    var reticleScale = script.placementPreviewReticleScale;
+    if (reticleScale === undefined || reticleScale === null || reticleScale <= 0) reticleScale = 3.0;
+    rmv.mesh = makeCircleMesh(reticleScale, segments);
+  } catch (eCircle) {
+    try { so.destroy(); } catch (eDestroy) {}
+    return null;
+  }
+  return so;
+}
+
+function getPlacementPreviewRay() {
+  if (placementPreviewRay && !isNull(placementPreviewRay)) return placementPreviewRay;
+  placementPreviewRay = createPreviewCopy(script.placementPreviewRayTemplate, "FlaneurPlacementRay");
+  return placementPreviewRay;
+}
+
+function hidePlacementPreview() {
+  if (placementPreviewReticle && !isNull(placementPreviewReticle)) placementPreviewReticle.enabled = false;
+  if (placementPreviewRay && !isNull(placementPreviewRay)) placementPreviewRay.enabled = false;
+}
+
+function isPinUiGloballyBlocked() {
+  try {
+    if (typeof global === "undefined") return false;
+    if (global.flaneurUiPressActive === true) return true;
+    if (global.flaneurSuppressPinDropUntil && getTime() < global.flaneurSuppressPinDropUntil) return true;
+    if (typeof global.flaneurPinIsSidebarOpen === "function" && global.flaneurPinIsSidebarOpen()) return true;
+    if (
+      typeof global.flaneurPinIsMeshPinSuppressedAfterSidebarClose === "function" &&
+      global.flaneurPinIsMeshPinSuppressedAfterSidebarClose()
+    ) {
+      return true;
+    }
+  } catch (eBlock) {}
+  return false;
+}
+
+function hitWorldMeshFromRay(from, to) {
+  var tracker = tryGetDeviceTracking();
+  if (!tracker || isNull(tracker) || !from || !to) return null;
+  try {
+    if (tracker.raycastWorldMesh) {
+      var rayHits = tracker.raycastWorldMesh(from, to);
+      if (rayHits && rayHits.length > 0 && rayHits[0] && rayHits[0].position) return rayHits[0];
+    }
+  } catch (eRay) {}
+  return null;
+}
+
+function updatePlacementPreviewFromRay(ray) {
+  if (script.placementPreviewEnabled === false || !ray || isPinUiGloballyBlocked()) {
+    hidePlacementPreview();
+    return null;
+  }
+  var hit = hitWorldMeshFromRay(ray.from, ray.to);
+  if (!hit || !hit.position) {
+    hidePlacementPreview();
+    return null;
+  }
+  var reticle = getPlacementPreviewReticle();
+  if (reticle && !isNull(reticle)) {
+    reticle.enabled = true;
+    try {
+      var reticleTr = reticle.getTransform();
+      reticleTr.setWorldPosition(hit.position);
+      if (hit.normal) reticleTr.setWorldRotation(quat.lookAt(vec3.forward(), hit.normal));
+      var reticleScale = script.placementPreviewReticleScale;
+      if (reticleScale === undefined || reticleScale === null || reticleScale <= 0) reticleScale = 0.35;
+      var circleThickness = script.placementPreviewReticleCircleThickness;
+      if (circleThickness === undefined || circleThickness === null || circleThickness <= 0) circleThickness = 0.06;
+      if (script.placementPreviewGenerateCircle !== false) {
+        reticleTr.setWorldScale(new vec3(1, 1, 1));
+      } else {
+        reticleTr.setWorldScale(new vec3(reticleScale, reticleScale * circleThickness, reticleScale));
+      }
+    } catch (eReticle) {}
+  }
+  var rayObj = getPlacementPreviewRay();
+  if (rayObj && !isNull(rayObj)) {
+    var dx = hit.position.x - ray.from.x;
+    var dy = hit.position.y - ray.from.y;
+    var dz = hit.position.z - ray.from.z;
+    var len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    var maxLen = script.placementPreviewRayMaxLength;
+    if (maxLen === undefined || maxLen === null || maxLen <= 0) maxLen = 400;
+    if (len > 1e-3) {
+      var clampedLen = Math.min(len, maxLen);
+      var dir = new vec3(dx / len, dy / len, dz / len);
+      var mid = ray.from.add(dir.uniformScale(clampedLen * 0.5));
+      var thickness = script.placementPreviewRayThickness;
+      if (thickness === undefined || thickness === null || thickness <= 0) thickness = 0.03;
+      rayObj.enabled = true;
+      try {
+        var rayTr = rayObj.getTransform();
+        rayTr.setWorldPosition(mid);
+        rayTr.setWorldRotation(quat.lookAt(dir, vec3.up()));
+        rayTr.setWorldScale(new vec3(thickness, thickness, clampedLen));
+      } catch (eRayObj) {}
+    } else {
+      rayObj.enabled = false;
+    }
+  }
+  return hit;
 }
 
 function commitWorldPosition(world, sourceLabel) {
@@ -509,12 +706,15 @@ function updateSikTriggerPinInput() {
   var currentRay = null;
   for (var i = 0; i < interactors.length; i++) {
     var interactor = interactors[i];
+    currentRay = getRayFromSikInteractor(interactor) || currentRay;
     if (isSikInteractorTriggered(interactor)) {
       triggered = true;
       currentRay = getRayFromSikInteractor(interactor) || currentRay;
       break;
     }
   }
+  if (currentRay) updatePlacementPreviewFromRay(currentRay);
+  else hidePlacementPreview();
   if (triggered) {
     if (currentRay) lastSikRay = currentRay;
     sikTriggerActive = true;
