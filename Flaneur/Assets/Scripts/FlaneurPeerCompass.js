@@ -62,6 +62,12 @@ var NEEDLE_WORLD_SCALE_FALLBACK = 0.1;
 var navNeedleId = "__nav__";
 var warnedMissingCompassTargetText = false;
 var lastNavDebugLog = -999;
+var currentPeerStoreId = "";
+var knownLocalPeerStoreIds = {};
+var retiredLocalPeerStoreIds = {};
+var lastOtherPeerCount = 0;
+var hasObservedOtherPeer = false;
+var localPeerCompassInstanceId = "pc_" + Math.floor(Math.random() * 1e9) + "_" + getTime().toFixed(4);
 
 function getNeedleWorldUniformScale() {
   var sc = script.needleUniformScale;
@@ -181,6 +187,68 @@ function myPeerStoreId(api) {
     return String(api.getLocalUserId());
   }
   return "";
+}
+
+function clearNavTargetForStoreId(store, peerStoreId) {
+  if (!store || !peerStoreId) {
+    return false;
+  }
+  try {
+    store.putString(NAV_PREFIX + String(peerStoreId), JSON.stringify({ type: "none", label: "", t: getTime() }));
+    return true;
+  } catch (eClear) {
+    return false;
+  }
+}
+
+function retireLocalPeerStoreId(store, peerStoreId) {
+  if (!store || !peerStoreId || retiredLocalPeerStoreIds[peerStoreId]) {
+    return;
+  }
+  retiredLocalPeerStoreIds[peerStoreId] = true;
+  destroyNeedle(peerStoreId);
+  try {
+    store.putString(
+      PEER_PREFIX + String(peerStoreId),
+      JSON.stringify({ x: 0, y: 0, z: 0, t: -999, n: "", cid: localPeerCompassInstanceId, stale: true })
+    );
+  } catch (ePeer) {}
+  clearNavTargetForStoreId(store, peerStoreId);
+  dbgCompass("Retired old local peer id=" + peerStoreId);
+}
+
+function rememberLocalPeerStoreId(store, peerStoreId) {
+  if (!peerStoreId) {
+    return;
+  }
+  var id = String(peerStoreId);
+  knownLocalPeerStoreIds[id] = true;
+  if (currentPeerStoreId && currentPeerStoreId !== id) {
+    retireLocalPeerStoreId(store, currentPeerStoreId);
+  }
+  currentPeerStoreId = id;
+}
+
+function getLocalPeerStoreId(api, store) {
+  var id = myPeerStoreId(api);
+  if (id) {
+    rememberLocalPeerStoreId(store, id);
+  }
+  return id;
+}
+
+function isLocalPeerRecord(peerId, data, myId) {
+  if (!peerId) {
+    return false;
+  }
+  var id = String(peerId);
+  if (id === String(myId || "")) {
+    return true;
+  }
+  if (knownLocalPeerStoreIds[id]) {
+    return true;
+  }
+  return !!(data && data.cid && String(data.cid) === localPeerCompassInstanceId);
 }
 
 /** Spectacles / editor: mount or an ancestor may be disabled (SetEnabledOnReady). */
@@ -383,7 +451,7 @@ function publishLocalPeerPose() {
   if (!store || !cam || isNull(cam) || !api || !api.worldPointToStored) {
     return;
   }
-  var selfId = myPeerStoreId(api);
+  var selfId = getLocalPeerStoreId(api, store);
   if (!selfId) {
     return;
   }
@@ -412,6 +480,7 @@ function publishLocalPeerPose() {
     z: stored.z,
     t: now,
     n: nameStr,
+    cid: localPeerCompassInstanceId,
   };
   try {
     store.putString(key, JSON.stringify(rec));
@@ -475,11 +544,13 @@ function updatePeerNeedlesLayout() {
   var mount = script.compassMount;
   if (!store || !cam || isNull(cam) || !api || !api.storedPointToWorld) {
     clearAllNeedles();
+    lastOtherPeerCount = 0;
     return;
   }
-  var myId = myPeerStoreId(api);
+  var myId = getLocalPeerStoreId(api, store);
   if (!myId) {
     clearAllNeedles();
+    lastOtherPeerCount = 0;
     return;
   }
   if (!mount || isNull(mount)) {
@@ -497,6 +568,12 @@ function updatePeerNeedlesLayout() {
   // Determine a local navigation target from the store (set by UI).
   var navRec = safeJsonParse(store.getString(NAV_PREFIX + myId));
   var wantNav = navRec && navRec.type && navRec.type !== "none";
+  if (wantNav && navRec.type === "peer" && isLocalPeerRecord(navRec.peerId, null, myId)) {
+    clearNavTargetForStoreId(store, myId);
+    navRec = { type: "none", label: "", t: getTime() };
+    wantNav = false;
+    dbgCompass("Cleared nav target that pointed at a local peer alias.");
+  }
   if (!script.compassTargetText || isNull(script.compassTargetText)) {
     if (script.logCompassDebug && !warnedMissingCompassTargetText) {
       warnedMissingCompassTargetText = true;
@@ -522,9 +599,6 @@ function updatePeerNeedlesLayout() {
       continue;
     }
     var pid = k.substring(PEER_PREFIX.length);
-    if (pid === myId) {
-      continue;
-    }
     var json = store.getString(k);
     if (!json) {
       continue;
@@ -538,12 +612,27 @@ function updatePeerNeedlesLayout() {
     if (!data || typeof data.x !== "number") {
       continue;
     }
+    if (isLocalPeerRecord(pid, data, myId)) {
+      continue;
+    }
     if (now - (data.t || 0) > staleCutoff) {
       continue;
     }
     peerIds.push(pid);
   }
   peerIds.sort();
+
+  if (wantNav && navRec.type === "pin" && !hasObservedOtherPeer && peerIds.length > 0) {
+    clearNavTargetForStoreId(store, myId);
+    navRec = { type: "none", label: "", t: getTime() };
+    wantNav = false;
+    setCompassTargetText("Friend");
+    dbgCompass("Auto-reset pin navigation to people because another peer joined.");
+  }
+  if (peerIds.length > 0) {
+    hasObservedOtherPeer = true;
+  }
+  lastOtherPeerCount = peerIds.length;
 
   var camTr = cam.getSceneObject().getTransform();
   var camPos = camTr.getWorldPosition();
@@ -588,9 +677,20 @@ function updatePeerNeedlesLayout() {
       if (navRec.type === "peer" && navRec.peerId) {
         var peerJson = store.getString(PEER_PREFIX + String(navRec.peerId));
         var peerData = safeJsonParse(peerJson);
-        if (peerData && typeof peerData.x === "number") {
+        var peerTargetIsFresh =
+          peerData &&
+          typeof peerData.x === "number" &&
+          peerData.stale !== true &&
+          !isLocalPeerRecord(navRec.peerId, peerData, myId) &&
+          now - (peerData.t || 0) <= staleCutoff;
+        if (peerTargetIsFresh) {
           targetWorld = api.storedPointToWorld(new vec3(peerData.x, peerData.y, peerData.z));
           if (!navLabel) navLabel = safeString(peerData.n || "Friend");
+        } else {
+          clearNavTargetForStoreId(store, myId);
+          wantNav = false;
+          seen[navNeedleId] = false;
+          dbgCompass("Cleared stale peer navigation target.");
         }
       } else if (navRec.type === "pin" && navRec.pinId && api.pinPrefix) {
         var pinJson = store.getString(String(api.pinPrefix) + String(navRec.pinId));
