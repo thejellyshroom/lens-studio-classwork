@@ -16,22 +16,69 @@
   FrustumCullPad: 0.000000
   InstanceCount: 1
   Defines:
-    - NODE_13_DROPLIST_ITEM 0
-    - NODE_27_DROPLIST_ITEM 0
-    - NODE_49_DROPLIST_ITEM 0
-    - NODE_69_DROPLIST_ITEM 0
-  BlendMode: PremultipliedAlphaAuto
+    - BLEND_MODE_DARKEN
+    - ENABLE_CUSTOM_BLEND
+    - sc_BlendMode_Custom
+  BlendMode: Darken
   Properties:
-    Port_Default_N204:
+    Port_Input0_N062:
       typeIdx: 1
       value: 0.000000
-    Port_Default_N369:
+    Port_Input1_N000:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N003:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N010:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N017:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N019:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N029:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N049:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N055:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N056:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N059:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N061:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input2_N049:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input2_N061:
+      typeIdx: 1
+      value: 0.000000
+    Port_Multiplier_N022:
+      typeIdx: 1
+      value: 0.000000
+    Port_Scale_N013:
+      typeIdx: 3
+      value: {x: 1.000000, y: 1.000000}
+    Port_Scale_N015:
+      typeIdx: 3
+      value: {x: 1.000000, y: 1.000000}
+    Port_Scale_N020:
+      typeIdx: 3
+      value: {x: 1.000000, y: 1.000000}
+    Port_Value_N023:
       typeIdx: 5
       value: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
     PreviewEnabled:
       typeIdx: 0
       value: 0
-    baseColor:
-      typeIdx: 5
-      value: {x: 1.000000, y: 0.165255, z: 0.467491, w: 1.000000}
-  Pass: !<reference> 0f662639-f8ba-4377-815b-2aa87e97026f
+  Pass: !<reference> df242053-7c84-490e-bda8-4f28af8ee8a0

@@ -26,19 +26,24 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    deviceTracking: false
     editorTouchBlockingForPreview: false
     logPinInputDebug: false
     pinDropFromGlobalScreenEvents: false
     pinDropInteraction: false
+    pinDropListenSikTrigger: false
     pinDropListenTriggerPrimary: false
     pinDropUiBlockerRoot: false
     pinDropUiBlockerRootExtra: false
     pinDropUiScreenSpaceCamera: false
     pinDropUiWorldProjectionSampleBudget: false
+    pinDropUseScreenSpaceFallback: false
+    pinDropUseWorldMesh: false
     pinDropUseWorldUiProjectionBlock: false
     pinDropWorldUiBlockScreenRadius: false
     placementDepth: false
     worldCamera: false
+    worldMeshRayDistance: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -49,10 +54,15 @@
     []
   DefaultScriptInputs:
     - worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      deviceTracking: !<reference.DeviceTracking> 00000000-0000-0000-0000-000000000000
+      pinDropUseWorldMesh: true
+      pinDropUseScreenSpaceFallback: false
       placementDepth: !<float> 200.000000
+      worldMeshRayDistance: !<float> 5000.000000
       pinDropInteraction: !<reference.InteractionComponent> 00000000-0000-0000-0000-000000000000
       pinDropFromGlobalScreenEvents: false
       pinDropListenTriggerPrimary: false
+      pinDropListenSikTrigger: true
       editorTouchBlockingForPreview: false
       pinDropUiBlockerRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pinDropUiBlockerRootExtra: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
