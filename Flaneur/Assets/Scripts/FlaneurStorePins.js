@@ -17,6 +17,9 @@
 // @input SceneObject markersRoot
 // @input SceneObject pinStoreCoordinateRoot
 // @input SceneObject pinTemplate
+// @input Asset.ObjectPrefab pinPrefab
+// @input vec3 pinSpawnOffset = {22, 48, 0}
+// @input float pinSpawnYOffset = 48.0
 // @input Component.Camera worldCamera
 // @input bool autoShareOnSoloConnect = true
 // @input bool useSpectaclesSyncKit = true
@@ -687,6 +690,14 @@ function setCollidersEnabledOnSubtree(so, enabled) {
   for (var i = 0; i < nc; i++) setCollidersEnabledOnSubtree(so.getChild(i), enabled);
 }
 
+function setEnabledOnSubtree(so, enabled) {
+  if (!so || isNull(so)) return;
+  try { so.enabled = enabled; } catch (e0) {}
+  var nc = 0;
+  try { nc = so.getChildrenCount(); } catch (e1) { nc = 0; }
+  for (var i = 0; i < nc; i++) setEnabledOnSubtree(so.getChild(i), enabled);
+}
+
 function applyPinColliderOcclusionForSidebar(isSidebarOpen) {
   pinCollidersMutedForSidebarUi = !!isSidebarOpen;
   var wantColliders = !pinCollidersMutedForSidebarUi;
@@ -704,14 +715,28 @@ function spawnPinObject() {
   var copyParent = getPinTemplateCopyParent();
   var template = script.pinTemplate;
   var so;
-  if (template && !isNull(template)) {
-    so = copyParent.copySceneObject(template);
-    try { so.setParent(parent); } catch (ePar) {}
-  } else {
-    so = scene.createSceneObject("FlaneurPin");
-    so.setParent(parent);
+  // Prefer instantiating from a Prefab asset when provided. This is the most reliable
+  // way to spawn animated prefabs (keeps internal enabled/component state intact).
+  var prefab = script.pinPrefab;
+  if (prefab && !isNull(prefab) && typeof prefab.instantiate === "function") {
+    try {
+      so = prefab.instantiate(parent);
+    } catch (ePref) {
+      so = null;
+      dbgNet("[Flaneur][pin] pinPrefab.instantiate failed: " + ePref);
+    }
   }
-  so.enabled = true;
+  if (!so || isNull(so)) {
+    if (template && !isNull(template)) {
+      so = copyParent.copySceneObject(template);
+      try { so.setParent(parent); } catch (ePar) {}
+    } else {
+      so = scene.createSceneObject("FlaneurPin");
+      so.setParent(parent);
+    }
+  }
+  // Some prefabs (especially animated ones) can have disabled children; ensure visibility.
+  setEnabledOnSubtree(so, true);
   return so;
 }
 
@@ -729,8 +754,17 @@ function upsertMarkerScene(data) {
   if (pinParent && !isNull(pinParent)) {
     try { so.setParent(pinParent); } catch (ePar2) {}
   }
-  if (useColocatedParent) so.getTransform().setLocalPosition(localVec);
-  else so.getTransform().setWorldPosition(storedVec3ToWorldPos(localVec));
+  var off = script.pinSpawnOffset;
+  if (!off || off.x === undefined) off = new vec3(0, 0, 0);
+  // Back-compat: if older scenes only set Y offset, apply it.
+  var legacyY = script.pinSpawnYOffset;
+  if (legacyY !== undefined && legacyY !== null && legacyY !== 0) off = off.add(new vec3(0, legacyY, 0));
+  if (useColocatedParent) {
+    so.getTransform().setLocalPosition(localVec.add(off));
+  } else {
+    var wp = storedVec3ToWorldPos(localVec);
+    so.getTransform().setWorldPosition(wp.add(off));
+  }
   if (pinCollidersMutedForSidebarUi) setCollidersEnabledOnSubtree(so, false);
 }
 
