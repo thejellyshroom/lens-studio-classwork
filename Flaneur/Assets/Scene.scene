@@ -1545,7 +1545,7 @@
     "":
       rows: 3
       columns: 2
-      cellSize: !<Vec2> {x: 11.000000, y: 11.000000}
+      cellSize: !<Vec2> {x: 11.000000, y: 13.000000}
       cellPadding: !<Vec4> {x: 0.000000, y: 0.000000, z: 0.000000, w: 0.000000}
       layoutBy: !<float> 0.000000
   ScriptTypes:
@@ -1974,7 +1974,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -2262,7 +2262,7 @@
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
   Children:
-    - !<own> 14f70ee6-9249-4264-9503-40dbab766d53
+    - !<own> 2d067e56-8b50-4941-bfcc-8df261c8f802
   Components:
     []
 - !<Text/14ca9f81-dc7f-418b-aeee-017ca1eae54a>
@@ -4143,13 +4143,9 @@
     - !<own> 3305c325-9d5c-4ad6-abf2-6647482249d9
 - !<SceneObject/26efe490-d7e1-4fbc-ab88-e9539ab64cb5>
   PrefabRemaps:
-    - 106fffbf-6b47-458c-9533-15ab4b4d8eed: 60e7a3b2-d974-46af-556a-46ee763abdcb
     - 26efe490-d7e1-4fbc-ab88-e9539ab64cb5: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
     - 3f1e23bd-d2f8-4ad3-97dc-2016ca845538: 36e82636-a353-432e-8399-b067b3cfca60
-    - 5e00bdc2-d284-4a8b-995b-45a1c16b793a: 8153e616-c268-4ff6-54dc-188f7f9df01e
-    - 6c76a18c-4744-4651-8a15-21211a202447: 02510d68-66f8-4070-5b56-2c4af4befd13
     - a9256d62-6664-4638-b425-b18d8f592b47: 5783fe4e-314a-44a1-7baa-227ff864ab57
-    - ae6fc81f-0cb4-4d2e-9188-287f5ae67f3d: 67596590-9967-4f09-57cb-4fe51fb5f9a3
   Name: PinEntry
   Enabled: true
   Layers: 1
@@ -5139,6 +5135,21 @@
   ScriptTypes:
     "":
       {}
+- !<SceneObject/2d067e56-8b50-4941-bfcc-8df261c8f802>
+  PrefabRemaps:
+    []
+  Name: ScrollWindow
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 14f70ee6-9249-4264-9503-40dbab766d53
+  Components:
+    - !<own> 400637a1-8cbc-4de2-8bd5-45145945cd4c
 - !<ScriptComponent/2d8fefaa-13f5-4adb-bd4a-2767823a4910>
   PrefabRemaps:
     []
@@ -6828,10 +6839,6 @@
     - 11631c53-9970-4620-a7d6-5ca96d9ae5ef: 5783fe4e-314a-44a1-7baa-227ff864ab57
     - 13bc56b1-e1b0-4cee-840d-100140d4bc5d: 36e82636-a353-432e-8399-b067b3cfca60
     - 3b13ed7d-9952-436c-b69c-df5d06a3b50c: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
-    - 58a0e261-6716-427c-adec-eeb5754f5489: 8153e616-c268-4ff6-54dc-188f7f9df01e
-    - b00303bb-f1ce-41f4-9d6d-6283c7bd79f4: 60e7a3b2-d974-46af-556a-46ee763abdcb
-    - b5002c09-ba97-43bd-8303-efe6487f96ea: 02510d68-66f8-4070-5b56-2c4af4befd13
-    - f10cbc1f-7a5a-4066-b8b8-418664b7a48c: 67596590-9967-4f09-57cb-4fe51fb5f9a3
   Name: PinEntry 6
   Enabled: true
   Layers: 1
@@ -6867,7 +6874,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -7063,7 +7070,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: -20.000000}
+    Position: {x: 0.000000, y: -1.000000, z: -20.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -7258,6 +7265,34 @@
     []
   Components:
     []
+- !<ScriptComponent/400637a1-8cbc-4de2-8bd5-45145945cd4c>
+  PrefabRemaps:
+    []
+  Name: ScrollWindow
+  Enabled: true
+  ScriptAsset: !<reference> 8ca0ce82-b275-4551-8560-820c44a54276
+  ScriptInputsDefault:
+    _vertical: true
+    _horizontal: true
+    _scrollPosition: true
+    _scrollSnapping: true
+    _snapRegion: true
+    _edgeFade: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      _vertical: true
+      _horizontal: false
+      _windowSize: !<Vec2> {x: 20.000000, y: 20.000000}
+      _scrollDimensions: !<Vec2> {x: 32.000000, y: 52.000000}
+      _scrollPosition: !<Vec2> {x: 0.000000, y: 0.000000}
+      _scrollSnapping: false
+      _snapRegion: !<Vec2> {x: -1.000000, y: 20.000000}
+      _edgeFade: false
+  ScriptTypes:
+    "":
+      {}
 - !<ScriptComponent/402bbae5-8f8f-482b-bbe9-79406f0a18c0>
   PrefabRemaps:
     []
@@ -7749,12 +7784,8 @@
 - !<SceneObject/441fb615-e0b5-43cc-99f2-f9cc94075587>
   PrefabRemaps:
     - 17ac2201-5a33-4a43-a02a-f959aad9fc06: 36e82636-a353-432e-8399-b067b3cfca60
-    - 1f430ec7-c310-41c1-b4b5-492d0e8ca298: 02510d68-66f8-4070-5b56-2c4af4befd13
     - 3b180e91-6e35-4bd2-a729-3b7b5c0ade79: 5783fe4e-314a-44a1-7baa-227ff864ab57
     - 441fb615-e0b5-43cc-99f2-f9cc94075587: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
-    - 49c1f7f5-efd0-4ac7-b3ed-eb7680d8504f: 67596590-9967-4f09-57cb-4fe51fb5f9a3
-    - 9e48d8c7-7002-4acc-971a-6208b09fb7da: 8153e616-c268-4ff6-54dc-188f7f9df01e
-    - f873c28e-defd-456b-b262-47d132613c16: 60e7a3b2-d974-46af-556a-46ee763abdcb
   Name: PinEntry 3
   Enabled: true
   Layers: 1
@@ -8187,7 +8218,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -8817,7 +8848,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: -7.843826, y: 0.000000, z: 0.000000}
+    Position: {x: -7.843826, y: -1.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -10347,7 +10378,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -11425,12 +11456,8 @@
   TwoSided: false
 - !<SceneObject/5e58cc12-7330-4411-8fa5-4e5d5dca863e>
   PrefabRemaps:
-    - 22984ab5-69b1-4e95-bbe5-e3ab67173d17: 02510d68-66f8-4070-5b56-2c4af4befd13
     - 4e1ec49f-99a4-4f2f-a603-70a05c47dfb0: 36e82636-a353-432e-8399-b067b3cfca60
     - 5e58cc12-7330-4411-8fa5-4e5d5dca863e: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
-    - 79c0320b-493f-4877-817a-7aac09e463c9: 67596590-9967-4f09-57cb-4fe51fb5f9a3
-    - 9b12ef1c-cc21-4702-9a19-b44a381b8696: 60e7a3b2-d974-46af-556a-46ee763abdcb
-    - e2da14de-341d-4e9c-b7ae-a91de89f7852: 8153e616-c268-4ff6-54dc-188f7f9df01e
     - fc03025f-7393-421d-9c57-163a5a6f2e19: 5783fe4e-314a-44a1-7baa-227ff864ab57
   Name: PinEntry 2
   Enabled: true
@@ -13199,12 +13226,8 @@
 - !<SceneObject/70dfe04a-bdfe-4e47-9f55-6494803ff818>
   PrefabRemaps:
     - 004bbcfb-3f66-4868-bfff-f129ff3d7a40: 36e82636-a353-432e-8399-b067b3cfca60
-    - 39c96112-22bc-45b8-970c-e6bc9d08e9d8: 02510d68-66f8-4070-5b56-2c4af4befd13
     - 5705789b-3796-42a0-9cd2-cd8a61271a63: 5783fe4e-314a-44a1-7baa-227ff864ab57
     - 70dfe04a-bdfe-4e47-9f55-6494803ff818: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
-    - 8e6d7c95-00cf-4f82-bb8f-5e77b499448b: 60e7a3b2-d974-46af-556a-46ee763abdcb
-    - 95e91952-db3d-4ebe-82ea-5afbbe029d29: 67596590-9967-4f09-57cb-4fe51fb5f9a3
-    - e7dd2fac-748b-4264-b08c-75a332427924: 8153e616-c268-4ff6-54dc-188f7f9df01e
   Name: PinEntry 4
   Enabled: true
   Layers: 1
@@ -15105,12 +15128,8 @@
 - !<SceneObject/8405d4d6-8bed-4724-b937-c7c1c0a9f1cf>
   PrefabRemaps:
     - 02fe7e62-893c-4413-a3a0-3722dd06987e: 36e82636-a353-432e-8399-b067b3cfca60
-    - 66cd2637-b542-4c3a-84a8-29e5de9c983e: 67596590-9967-4f09-57cb-4fe51fb5f9a3
-    - 83a1c0e6-2d09-484f-921c-cc0377b4aa5c: 8153e616-c268-4ff6-54dc-188f7f9df01e
     - 8405d4d6-8bed-4724-b937-c7c1c0a9f1cf: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
     - 8897b4ef-5456-43fa-beb5-807e4771795a: 5783fe4e-314a-44a1-7baa-227ff864ab57
-    - b474d9ab-cf4f-4bf3-8016-d878f9461d81: 02510d68-66f8-4070-5b56-2c4af4befd13
-    - bfd81ae2-02fa-456b-9eaa-936f22c914d5: 60e7a3b2-d974-46af-556a-46ee763abdcb
   Name: PinEntry 8
   Enabled: true
   Layers: 1
@@ -15716,7 +15735,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -16270,12 +16289,8 @@
     []
 - !<SceneObject/8e5e05d7-85a7-4d28-a3f3-116c97f51b58>
   PrefabRemaps:
-    - 2551fd7f-5a54-4cde-8bab-c7e8728b1d3a: 02510d68-66f8-4070-5b56-2c4af4befd13
     - 471b97e0-a2d8-4cfe-b28b-03a7712cd820: 5783fe4e-314a-44a1-7baa-227ff864ab57
-    - 563792ed-488b-41ce-afc7-21dc2301780b: 60e7a3b2-d974-46af-556a-46ee763abdcb
-    - 794291df-0025-4d7a-a417-d6cb58257f49: 67596590-9967-4f09-57cb-4fe51fb5f9a3
     - 8e5e05d7-85a7-4d28-a3f3-116c97f51b58: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
-    - e2b0fdf1-182f-44e1-aa74-f585dc176c38: 8153e616-c268-4ff6-54dc-188f7f9df01e
     - ff7ab85d-5c09-4e81-99a9-3f6e2fb15e9f: 36e82636-a353-432e-8399-b067b3cfca60
   Name: PinEntry 5
   Enabled: true
@@ -17141,7 +17156,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -19349,7 +19364,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 1.540302, z: 0.000000}
+    Position: {x: 0.000000, y: -1.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -19478,7 +19493,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -20534,13 +20549,9 @@
     []
 - !<SceneObject/b26666ad-7df3-4f9c-a3b1-4becb0452c66>
   PrefabRemaps:
-    - 2f9a8421-b4f7-4862-b25f-33a1f9313129: 60e7a3b2-d974-46af-556a-46ee763abdcb
-    - 3b88c124-265f-4470-936d-cd310fa1e58c: 8153e616-c268-4ff6-54dc-188f7f9df01e
     - 597772b5-3fca-4b69-be4a-ad143b29b6c7: 36e82636-a353-432e-8399-b067b3cfca60
-    - 5a64a650-ac40-4680-aeda-b1fdc91a0e7e: 67596590-9967-4f09-57cb-4fe51fb5f9a3
     - b26666ad-7df3-4f9c-a3b1-4becb0452c66: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
     - b5304404-ab29-4723-8499-7b8b48729991: 5783fe4e-314a-44a1-7baa-227ff864ab57
-    - fa0d0697-a250-400e-9aa9-60e138874602: 02510d68-66f8-4070-5b56-2c4af4befd13
   Name: PinEntry 7
   Enabled: true
   Layers: 1
@@ -21302,7 +21313,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -24362,7 +24373,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 3.521702, z: 0.000000}
+    Position: {x: 0.000000, y: -1.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -30343,11 +30354,7 @@
 - !<SceneObject/fa0c03e7-8ba2-454e-8a7e-c52493563de1>
   PrefabRemaps:
     - 21e17400-b0b1-4664-96d1-eefa6e6ff85b: 36e82636-a353-432e-8399-b067b3cfca60
-    - 4f3a46df-68b9-4720-b58f-5ca90ccee565: 60e7a3b2-d974-46af-556a-46ee763abdcb
-    - 79e917f5-4011-420c-bfa5-de79cd40e3f8: 67596590-9967-4f09-57cb-4fe51fb5f9a3
-    - 86d517bb-1f3d-43de-bb9b-339bd4cb2470: 02510d68-66f8-4070-5b56-2c4af4befd13
     - 9605091d-bff3-4946-99f0-3d002920d05a: 5783fe4e-314a-44a1-7baa-227ff864ab57
-    - 9638b3de-9cab-439d-81ec-988c0bc61ef0: 8153e616-c268-4ff6-54dc-188f7f9df01e
     - fa0c03e7-8ba2-454e-8a7e-c52493563de1: 78f354c2-9bf4-47a3-6758-d02fe3e8a7d2
   Name: PinEntry 1
   Enabled: true
@@ -30648,7 +30655,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 10.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral

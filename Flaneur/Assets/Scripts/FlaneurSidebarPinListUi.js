@@ -60,6 +60,42 @@ var sharedNavPinLabel = "";
 var navSlotPinIds = ["", "", "", "", "", "", "", ""];
 var navSlotPinLabels = ["", "", "", "", "", "", "", ""];
 
+function findScrollWindowScriptComponent() {
+  // Prefer user-provided list root (usually the scroll container).
+  var root = script.sidebarListRoot;
+  if (!root || isNull(root)) {
+    root = script.sidebarPanel;
+  }
+  if (!root || isNull(root)) return null;
+  // Common name in the hierarchy.
+  var swSo = findNamed(root, "ScrollWindow");
+  var comps = getScriptComponents(swSo || root);
+  for (var i = 0; i < comps.length; i++) {
+    var c = comps[i];
+    if (!c || isNull(c)) continue;
+    try {
+      if (c.name === "ScrollWindow") return c;
+    } catch (eName) {}
+    // Heuristic: ScrollWindow exposes _scrollPosition vec2 input.
+    try {
+      if (c._scrollPosition && c._scrollPosition.x !== undefined && c._scrollPosition.y !== undefined) return c;
+    } catch (ePos) {}
+  }
+  return null;
+}
+
+function scrollSidebarToTop(reason) {
+  var sw = findScrollWindowScriptComponent();
+  if (!sw || isNull(sw)) return false;
+  try {
+    sw._scrollPosition = new vec2(0, 0);
+    dbgUi("scroll->top reason=" + (reason || ""));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function possessivePinLabel(name) {
   var n = name ? String(name) : "";
   if (!n) return "Pin";
@@ -630,7 +666,7 @@ function ensurePinRowVisuals(row) {
   if (!nameSo) {
     nameSo = scene.createSceneObject("PinName");
     nameSo.setParent(row);
-    nameSo.getTransform().setLocalPosition(new vec3(5.8, -0.9, 0.05));
+    nameSo.getTransform().setLocalPosition(new vec3(5.8, -4.9, 0.05));
   }
 
   var imgComp = imgSo.getComponent("Component.Image") || imgSo.getComponent("Image");
@@ -915,6 +951,7 @@ function rebuildPinListImmediate(reason) {
     }
     updatePinCountBadge();
     refreshSpectaclesGridLayout(parent);
+    runNextFrame(function () { scrollSidebarToTop("rebuild-static"); });
     return;
   }
 
@@ -940,6 +977,7 @@ function rebuildPinListImmediate(reason) {
   runNextFrame(function () {
     for (var k = 0; k < dynamicRows.length; k++) setupPinRow(dynamicRows[k], rows[k], st, api, -1);
     refreshSpectaclesGridLayout(parent);
+    scrollSidebarToTop("rebuild-dynamic");
   });
 }
 
@@ -1035,7 +1073,10 @@ function applySidebarOpenState(isOpen) {
   if (pan && !isNull(pan)) {
     try { pan.enabled = sidebarOpen; } catch (e2) {}
   }
-  if (sidebarOpen) requestPinListRebuild("open");
+  if (sidebarOpen) {
+    scrollSidebarToTop("open");
+    requestPinListRebuild("open");
+  }
   updatePinCountBadge();
 
   try {
