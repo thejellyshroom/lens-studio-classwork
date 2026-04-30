@@ -27,14 +27,16 @@
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
     autoShareOnSoloConnect: false
+    bluePinPrefab: false
     capturePinPhotos: false
     connectedLensModule: false
     logNetworkDebug: false
     logPinInputDebug: false
     markersRoot: false
-    pinPrefab: false
+    pinSparkleDistance: false
     pinSpawnOffset: false
     pinStoreCoordinateRoot: false
+    redPinPrefab: false
     useSpectaclesSyncKit: false
     worldCamera: false
   ScriptTypesHidden:
@@ -49,8 +51,10 @@
     - connectedLensModule: !<reference.ConnectedLensModule> 00000000-0000-0000-0000-000000000000
       markersRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pinStoreCoordinateRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      pinPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      bluePinPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      redPinPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
       pinSpawnOffset: !<Vec3> {x: 0.000000, y: 6.000000, z: 0.000000}
+      pinSparkleDistance: !<float> 150.000000
       worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       autoShareOnSoloConnect: true
       useSpectaclesSyncKit: true

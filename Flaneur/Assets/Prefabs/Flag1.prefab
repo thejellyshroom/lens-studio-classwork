@@ -247,7 +247,7 @@
 - !<SceneObject/f145a91f-58d7-403b-936b-2148719a93a1>
   PrefabRemaps:
     []
-  Name: VFX
+  Name: vfx
   Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>

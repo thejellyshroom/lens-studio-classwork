@@ -3914,7 +3914,7 @@
     - e9d3e341-a269-493e-81fa-c7ab82028a81: ba23b5d2-0704-434d-405e-e270926d12ec
     - fd01aed7-d080-4161-ab6a-20d6e12383a1: da0cb960-01c7-45af-529b-834cf130beea
   Name: Flag2
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: -35.914089, y: 21.293255, z: -33.879913}
@@ -8323,7 +8323,7 @@
 - !<SceneObject/45fccb95-3a0e-44f7-b9e1-5c94c79957b1>
   PrefabRemaps:
     []
-  Name: VFX
+  Name: vfx
   Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
@@ -21631,7 +21631,7 @@
     - dd50c17b-e0df-4f15-9661-369a1d83d85f: 5cdc16f3-8f07-49a6-b91c-41ed1658d7e1
     - e90b5518-10c3-49c2-a8e7-81fbdc6d5a28: 7747bf74-39a8-466f-a429-de00e594b760
   Name: Flag1
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 1.789845, y: 21.293255, z: -33.879913}
@@ -24038,6 +24038,7 @@
   Enabled: true
   ScriptAsset: !<reference> e20fbb15-e0ef-44fa-ab49-90d50d34d9c2
   ScriptInputsDefault:
+    pinSparkleDistance: true
     autoShareOnSoloConnect: true
     useSpectaclesSyncKit: true
     logNetworkDebug: true
@@ -24050,8 +24051,10 @@
       connectedLensModule: !<reference.ConnectedLensModule> a36fb029-f716-4bb1-ae29-8f14862e7ce3
       markersRoot: !<reference.SceneObject> c4177d45-3ea4-4837-8cf4-d714d1ce8d05
       pinStoreCoordinateRoot: !<reference.SceneObject> c4177d45-3ea4-4837-8cf4-d714d1ce8d05
-      pinPrefab: !<reference.ObjectPrefab> 2a6f5655-457c-439e-86ea-d270a8577cf0
-      pinSpawnOffset: !<Vec3> {x: 22.000000, y: 48.000000, z: 0.000000}
+      bluePinPrefab: !<reference.ObjectPrefab> 2a6f5655-457c-439e-86ea-d270a8577cf0
+      redPinPrefab: !<reference.ObjectPrefab> 166a5dd9-b519-43ad-9886-096019ae0d1e
+      pinSpawnOffset: !<Vec3> {x: 22.000000, y: 52.000000, z: 0.000000}
+      pinSparkleDistance: !<float> 150.000000
       worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
       autoShareOnSoloConnect: true
       useSpectaclesSyncKit: true
@@ -30172,7 +30175,7 @@
 - !<SceneObject/e90b5518-10c3-49c2-a8e7-81fbdc6d5a28>
   PrefabRemaps:
     []
-  Name: VFX
+  Name: vfx
   Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>

@@ -16,8 +16,10 @@
 // @input Asset.ConnectedLensModule connectedLensModule
 // @input SceneObject markersRoot
 // @input SceneObject pinStoreCoordinateRoot
-// @input Asset.ObjectPrefab pinPrefab
+// @input Asset.ObjectPrefab bluePinPrefab
+// @input Asset.ObjectPrefab redPinPrefab
 // @input vec3 pinSpawnOffset = {22, 48, 0}
+// @input float pinSparkleDistance = 150.0
 // @input Component.Camera worldCamera
 // @input bool autoShareOnSoloConnect = true
 // @input bool useSpectaclesSyncKit = true
@@ -27,8 +29,10 @@
 
 var FLANEUR_STORE_ID = "flaneur_pins_v1";
 var PIN_KEY_PREFIX = "pin:";
+var PEER_KEY_PREFIX = "peer:";
 var REACT_KEY_PREFIX = "react:";
 var NAV_KEY_PREFIX = "nav:";
+var PLAYER_ORDER_KEY = "flaneur_player_order_v1";
 
 var options = ConnectedLensSessionOptions.create();
 options.onConnected = onConnected;
@@ -48,6 +52,9 @@ var localUserId = "";
 var localConnectionId = "";
 var localDisplayName = "";
 var markerById = {};
+var markerColorById = {};
+var markerVfxRootById = {};
+var markerVfxEnabledById = {};
 
 var syncKitSc = null;
 var syncKitWired = false;
@@ -101,6 +108,58 @@ function getSessionController() {
   return null;
 }
 
+function getStableLocalOwnerId() {
+  if (localConnectionId && String(localConnectionId).length > 0) return String(localConnectionId);
+  if (localUserId && String(localUserId).length > 0) return String(localUserId);
+  return "";
+}
+
+function readPlayerOrder() {
+  if (!flaneurStore) return [];
+  var raw = "";
+  try { raw = flaneurStore.getString(PLAYER_ORDER_KEY); } catch (eRead) { raw = ""; }
+  var parsed = safeJsonParse(raw);
+  if (parsed && parsed.players && parsed.players.length !== undefined) return parsed.players;
+  if (parsed && parsed.length !== undefined) return parsed;
+  return [];
+}
+
+function writePlayerOrder(players) {
+  if (!flaneurStore) return;
+  try {
+    flaneurStore.putString(PLAYER_ORDER_KEY, JSON.stringify({ players: players, t: getTime() }));
+  } catch (eWrite) {
+    dbgNet("[Flaneur][players] Failed to write player order: " + eWrite);
+  }
+}
+
+function getPlayerIndexForOwner(ownerId, shouldRegister) {
+  var oid = String(ownerId || "");
+  if (!oid) return 0;
+  var players = readPlayerOrder();
+  for (var i = 0; i < players.length; i++) {
+    if (String(players[i]) === oid) return i;
+  }
+  if (!shouldRegister || !flaneurStore) return 0;
+  players.push(oid);
+  writePlayerOrder(players);
+  return players.length - 1;
+}
+
+function colorForPlayerIndex(index) {
+  return (index % 2) === 1 ? "red" : "blue";
+}
+
+function getColorForOwner(ownerId, shouldRegister) {
+  return colorForPlayerIndex(getPlayerIndexForOwner(ownerId, shouldRegister));
+}
+
+function ensureLocalPlayerRegistered() {
+  var ownerId = getStableLocalOwnerId();
+  if (!ownerId || !flaneurStore) return;
+  getPlayerIndexForOwner(ownerId, true);
+}
+
 function wireSpectaclesSyncKit(sc) {
   if (syncKitWired) return;
   syncKitWired = true;
@@ -119,6 +178,7 @@ function applyLocalUserInfoFromSession(info) {
   if (info.userId) localUserId = info.userId;
   if (info.connectionId) localConnectionId = info.connectionId;
   if (info.displayName) localDisplayName = info.displayName;
+  ensureLocalPlayerRegistered();
   publishGlobalApi();
 }
 
@@ -339,7 +399,8 @@ function tryBindExistingFlaneurStore(sess) {
 }
 
 function getFlaneurPinOwnerIdForStore() {
-  if (localUserId && String(localUserId).length > 0) return String(localUserId);
+  var stableLocalOwnerId = getStableLocalOwnerId();
+  if (stableLocalOwnerId) return stableLocalOwnerId;
   if (!flaneurFallbackOwnerId) flaneurFallbackOwnerId = "c_" + Math.floor(Math.random() * 1e9) + "_" + getTime().toFixed(4);
   return flaneurFallbackOwnerId;
 }
@@ -446,6 +507,7 @@ function bindFlaneurStore(store) {
 
   if (!hadPreviousBoundStore) rebuildAllMarkersFromStore();
   else resyncPinMarkersFromStoreWithoutClear();
+  ensureLocalPlayerRegistered();
   publishGlobalApi();
   refreshLocalDisplayNameFromSession();
 }
@@ -491,6 +553,10 @@ function onRealtimeStoreUpdated(sess, store, key, updateInfo) {
   if (key.indexOf(PIN_KEY_PREFIX) === 0) {
     applyMarkerKey(key);
     maybeNotifyRemotePinDropFromStoreKey(key, updateInfo);
+  } else if (key.indexOf(PEER_KEY_PREFIX) === 0) {
+    updateAllMarkerProximityVfx();
+  } else if (key === PLAYER_ORDER_KEY) {
+    resyncPinMarkersFromStoreWithoutClear();
   }
   try {
     if (typeof global !== "undefined" && typeof global.flaneurPinStoreKeyUpdated === "function") {
@@ -590,6 +656,9 @@ function clearAllMarkerObjects() {
     if (so && !isNull(so)) so.destroy();
   }
   markerById = {};
+  markerColorById = {};
+  markerVfxRootById = {};
+  markerVfxEnabledById = {};
 }
 
 function removeMarkerForKey(key) {
@@ -597,6 +666,9 @@ function removeMarkerForKey(key) {
   var so = markerById[id];
   if (so && !isNull(so)) so.destroy();
   delete markerById[id];
+  delete markerColorById[id];
+  delete markerVfxRootById[id];
+  delete markerVfxEnabledById[id];
 }
 
 function ensurePinDropToastFlushLoop() {
@@ -694,6 +766,92 @@ function setEnabledOnSubtree(so, enabled) {
   for (var i = 0; i < nc; i++) setEnabledOnSubtree(so.getChild(i), enabled);
 }
 
+function findVfxRoot(so) {
+  if (!so || isNull(so)) return null;
+  try {
+    var name = String(so.name || "").toLowerCase();
+    if (name === "vfx" || name.indexOf("vfx") >= 0) return so;
+  } catch (eName) {}
+  var nc = 0;
+  try { nc = so.getChildrenCount(); } catch (eChildren) { nc = 0; }
+  for (var i = 0; i < nc; i++) {
+    var found = findVfxRoot(so.getChild(i));
+    if (found && !isNull(found)) return found;
+  }
+  return null;
+}
+
+function setMarkerVfxEnabled(id, enabled) {
+  var vfxRoot = markerVfxRootById[id];
+  if (!vfxRoot || isNull(vfxRoot)) return;
+  var want = !!enabled;
+  if (markerVfxEnabledById[id] === want) return;
+  markerVfxEnabledById[id] = want;
+  setEnabledOnSubtree(vfxRoot, want);
+}
+
+function distSq3(a, b) {
+  var dx = a.x - b.x;
+  var dy = a.y - b.y;
+  var dz = a.z - b.z;
+  return dx * dx + dy * dy + dz * dz;
+}
+
+function getPinSparkleDistance() {
+  var d = script.pinSparkleDistance;
+  if (d === undefined || d === null || d <= 0) return 150.0;
+  return d;
+}
+
+function getLocalCameraWorldPosition() {
+  if (!script.worldCamera || isNull(script.worldCamera)) return null;
+  try {
+    var camSo = script.worldCamera.getSceneObject();
+    if (camSo && !isNull(camSo)) return camSo.getTransform().getWorldPosition();
+  } catch (eCam) {}
+  return null;
+}
+
+function isAnyStoredPeerCloseToWorldPosition(worldPos, maxDistSq) {
+  if (!flaneurStore || !worldPos) return false;
+  var keys;
+  try { keys = flaneurStore.getAllKeys(); } catch (eKeys) { return false; }
+  var now = getTime();
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    if (typeof k !== "string" || k.indexOf(PEER_KEY_PREFIX) !== 0) continue;
+    var rec = safeJsonParse(flaneurStore.getString(k));
+    if (!rec || rec.x === undefined || rec.y === undefined || rec.z === undefined) continue;
+    if (rec.t !== undefined && now - rec.t > 5.0) continue;
+    var peerWorld = storedVec3ToWorldPos(new vec3(rec.x, rec.y, rec.z));
+    if (distSq3(peerWorld, worldPos) <= maxDistSq) return true;
+  }
+  return false;
+}
+
+function updateMarkerProximityVfx(id) {
+  var so = markerById[id];
+  if (!so || isNull(so)) return;
+  var worldPos = null;
+  try { worldPos = so.getTransform().getWorldPosition(); } catch (ePos) { worldPos = null; }
+  if (!worldPos) {
+    setMarkerVfxEnabled(id, false);
+    return;
+  }
+  var maxDist = getPinSparkleDistance();
+  var maxDistSq = maxDist * maxDist;
+  var localCamPos = getLocalCameraWorldPosition();
+  var close = !!(localCamPos && distSq3(localCamPos, worldPos) <= maxDistSq);
+  if (!close) close = isAnyStoredPeerCloseToWorldPosition(worldPos, maxDistSq);
+  setMarkerVfxEnabled(id, close);
+}
+
+function updateAllMarkerProximityVfx() {
+  for (var id in markerById) {
+    if (markerById.hasOwnProperty(id)) updateMarkerProximityVfx(id);
+  }
+}
+
 function applyPinColliderOcclusionForSidebar(isSidebarOpen) {
   pinCollidersMutedForSidebarUi = !!isSidebarOpen;
   var wantColliders = !pinCollidersMutedForSidebarUi;
@@ -706,17 +864,32 @@ function applyPinColliderOcclusionForSidebar(isSidebarOpen) {
 
 function onSidebarOpenChangedForPinMeshOcclusion(isSidebarOpen) { applyPinColliderOcclusionForSidebar(!!isSidebarOpen); }
 
-function spawnPinObject() {
+function getPinColorForRecord(data) {
+  if (data && data.color) {
+    var c = String(data.color).toLowerCase();
+    if (c === "red" || c === "blue") return c;
+  }
+  return getColorForOwner(data ? data.oid : "", true);
+}
+
+function getPrefabForPinColor(color) {
+  if (color === "red" && script.redPinPrefab && !isNull(script.redPinPrefab)) return script.redPinPrefab;
+  if (script.bluePinPrefab && !isNull(script.bluePinPrefab)) return script.bluePinPrefab;
+  if (script.redPinPrefab && !isNull(script.redPinPrefab)) return script.redPinPrefab;
+  return null;
+}
+
+function spawnPinObject(color) {
   var parent = getPinInstanceParent();
   var so;
   // Instantiate the configured prefab asset so animated pin prefabs stay intact.
-  var prefab = script.pinPrefab;
+  var prefab = getPrefabForPinColor(color);
   if (prefab && !isNull(prefab) && typeof prefab.instantiate === "function") {
     try {
       so = prefab.instantiate(parent);
     } catch (ePref) {
       so = null;
-      dbgNet("[Flaneur][pin] pinPrefab.instantiate failed: " + ePref);
+      dbgNet("[Flaneur][pin] " + color + " prefab instantiate failed: " + ePref);
     }
   }
   if (!so || isNull(so)) {
@@ -730,13 +903,22 @@ function spawnPinObject() {
 
 function upsertMarkerScene(data) {
   var id = data.id;
+  var color = getPinColorForRecord(data);
   var localVec = new vec3(data.x, data.y, data.z);
   var coordRoot = script.pinStoreCoordinateRoot;
   var useColocatedParent = coordRoot && !isNull(coordRoot);
   var so = markerById[id];
+  if (so && !isNull(so) && markerColorById[id] !== color) {
+    try { so.destroy(); } catch (eDestroyColor) {}
+    so = null;
+  }
   if (!so || isNull(so)) {
-    so = spawnPinObject();
+    so = spawnPinObject(color);
     markerById[id] = so;
+    markerColorById[id] = color;
+    markerVfxRootById[id] = findVfxRoot(so);
+    markerVfxEnabledById[id] = null;
+    setMarkerVfxEnabled(id, false);
   }
   var pinParent = getPinInstanceParent();
   if (pinParent && !isNull(pinParent)) {
@@ -751,6 +933,7 @@ function upsertMarkerScene(data) {
     so.getTransform().setWorldPosition(wp.add(off));
   }
   if (pinCollidersMutedForSidebarUi) setCollidersEnabledOnSubtree(so, false);
+  updateMarkerProximityVfx(id);
 }
 
 function makePinId() { return "p_" + getTime().toFixed(4) + "_" + Math.floor(Math.random() * 1e9); }
@@ -775,7 +958,20 @@ function commitPinAtWorldPosition(worldVec3) {
   lastPinWallTime = t;
   var stored = worldPointToStoredVec3(worldVec3);
   var ownerId = getFlaneurPinOwnerIdForStore();
-  var rec = { id: makePinId(), oid: ownerId, name: localDisplayName || localUserId || ownerId || "Player", img: "", x: stored.x, y: stored.y, z: stored.z, t: t };
+  var playerIndex = getPlayerIndexForOwner(ownerId, true);
+  var color = colorForPlayerIndex(playerIndex);
+  var rec = {
+    id: makePinId(),
+    oid: ownerId,
+    name: localDisplayName || localUserId || ownerId || "Player",
+    img: "",
+    x: stored.x,
+    y: stored.y,
+    z: stored.z,
+    t: t,
+    playerIndex: playerIndex,
+    color: color
+  };
   localOriginatedPinIds[rec.id] = true;
   upsertPinInStore(rec);
   upsertMarkerScene(rec);
@@ -799,6 +995,10 @@ script.createEvent("TurnOnEvent").bind(function () {
   publishGlobalApi();
   tryWireMultiplayerBackend();
   flushPendingPinDropToasts();
+});
+
+script.createEvent("UpdateEvent").bind(function () {
+  updateAllMarkerProximityVfx();
 });
 
 script.shareSession = shareSession;
