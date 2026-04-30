@@ -1,0 +1,65 @@
+- !<AssetImportMetadata/6a93f3b1-251e-2609-6f18-b43ddd0f2d9e>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 6c50803f-050d-41aa-abe5-b6a6a7b3fb82
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 6c50803f-050d-41aa-abe5-b6a6a7b3fb82
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    AssetLibraryId: 5XyFG5FUWczwqiCRpc2Qlf
+  AssetDataMap:
+    JavaScriptAsset: !<own> c0269670-367e-4044-bb74-2132cd3f791f
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/c0269670-367e-4044-bb74-2132cd3f791f>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 9a4d6ccd-4670-4744-b55d-7c22cde2207e
+  ExportUid: 0006136a-20f6-45d5-0000-000000010a16
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    backgroundImage: false
+    closeButton: false
+    confirmButton: false
+    hideModalOnConfirmPress: false
+    hideModalOnSuppButtonPress: false
+    hintTextComponent: false
+    instructionTextComponent: false
+    presetConfirmButtonText: false
+    presetDefaultPlaceholderText: false
+    presetInstructionText: false
+    presetSuppButtonText: false
+    suppButton: false
+    userInputTextComponent: false
+  ScriptTypesHidden:
+    UIButton: false
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - presetConfirmButtonText: ""
+      presetSuppButtonText: ""
+      presetDefaultPlaceholderText: ""
+      presetInstructionText: ""
+      confirmButton: !<Typename.UIButton> 00000000-0000-0000-0000-000000000000
+      hideModalOnConfirmPress: false
+      hideModalOnSuppButtonPress: false
+      suppButton: !<Typename.UIButton> 00000000-0000-0000-0000-000000000000
+      closeButton: !<Typename.UIButton> 00000000-0000-0000-0000-000000000000
+      userInputTextComponent: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      hintTextComponent: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      instructionTextComponent: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      backgroundImage: !<reference.Image> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    - UIButton: !<reference.ScriptAsset> 00000000-0000-0000-0000-000000000000

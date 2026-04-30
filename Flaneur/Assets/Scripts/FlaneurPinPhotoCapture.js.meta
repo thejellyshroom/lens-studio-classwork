@@ -28,6 +28,11 @@
   ScriptInputsHidden:
     capturePinPhotos: false
     logPinInputDebug: false
+    maxSnapshotBase64Chars: false
+    previewSnapshotTexture: false
+    snapshotImageSmallerDimension: false
+    useCameraModuleOnDevice: false
+    usePreviewSceneTargetFallback: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -38,6 +43,11 @@
     []
   DefaultScriptInputs:
     - capturePinPhotos: true
+      previewSnapshotTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
+      usePreviewSceneTargetFallback: true
+      useCameraModuleOnDevice: false
+      snapshotImageSmallerDimension: 512
+      maxSnapshotBase64Chars: 60000
       logPinInputDebug: false
   ScriptTypes:
     -

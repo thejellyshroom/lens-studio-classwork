@@ -586,6 +586,20 @@ function normalizeStoreImageBase64(s) {
   return s;
 }
 
+function getLocalSnapshotTexture(pinId) {
+  if (!pinId) return null;
+  try {
+    if (
+      typeof global !== "undefined" &&
+      global.flaneurPinLocalSnapshotTextures &&
+      global.flaneurPinLocalSnapshotTextures[String(pinId)]
+    ) {
+      return global.flaneurPinLocalSnapshotTextures[String(pinId)];
+    }
+  } catch (e) {}
+  return null;
+}
+
 function pinRowDisplayName(data) {
   if (!data) return "Player";
   var raw =
@@ -602,18 +616,21 @@ function pinRowDisplayName(data) {
 function ensurePinRowVisuals(row) {
   if (!row || isNull(row)) return { img: null, text: null };
 
-  var imgSo = findNamed(row, "PinPhoto") || findNamedFuzzy(row, "pinphoto");
+  var imgSo = findNamed(row, "PinPhoto") || findNamedFuzzy(row, "pinphoto") || findNamed(row, "Logo") || findNamedFuzzy(row, "logo");
   var nameSo = findNamed(row, "PinName") || findNamedFuzzy(row, "pinname");
 
   if (!imgSo) {
     imgSo = scene.createSceneObject("PinPhoto");
     imgSo.setParent(row);
-    imgSo.getTransform().setLocalPosition(new vec3(-3.2, 0.0, 0.05));
+    imgSo.getTransform().setLocalPosition(new vec3(-0.0, 1.0, 0.2));
   }
+  try {
+    imgSo.getTransform().setLocalScale(new vec3(10.0, 10.0, 1.0));
+  } catch (eImgScale) {}
   if (!nameSo) {
     nameSo = scene.createSceneObject("PinName");
     nameSo.setParent(row);
-    nameSo.getTransform().setLocalPosition(new vec3(2.6, -0.9, 0.05));
+    nameSo.getTransform().setLocalPosition(new vec3(5.8, -0.9, 0.05));
   }
 
   var imgComp = imgSo.getComponent("Component.Image") || imgSo.getComponent("Image");
@@ -827,8 +844,13 @@ function setupPinRow(row, data, store, api, slotIndex) {
   if (rawImg.length > 0 && visuals && visuals.img) {
     var payload2 = normalizeStoreImageBase64(rawImg);
     Base64.decodeTextureAsync(payload2, function (tex) { applyTextureToPinRowImage(visuals.img, tex); }, function () {});
-  } else if (wantPlaceholder && visuals && visuals.img && script.sidebarCloseIconTexture && !isNull(script.sidebarCloseIconTexture)) {
-    applyTextureToPinRowImage(visuals.img, script.sidebarCloseIconTexture);
+  } else if (visuals && visuals.img) {
+    var localTex = getLocalSnapshotTexture(data.id);
+    if (localTex && !isNull(localTex)) {
+      applyTextureToPinRowImage(visuals.img, localTex);
+    } else if (wantPlaceholder && script.sidebarCloseIconTexture && !isNull(script.sidebarCloseIconTexture)) {
+      applyTextureToPinRowImage(visuals.img, script.sidebarCloseIconTexture);
+    }
   }
 }
 
