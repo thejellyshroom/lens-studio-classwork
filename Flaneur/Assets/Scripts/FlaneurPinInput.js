@@ -12,6 +12,9 @@
 // @input Component.Camera worldCamera
 // @input Component.DeviceTracking deviceTracking
 // @input float worldMeshRayDistance = 5000.0
+// @input bool placementPreviewEnabled = true
+// @input SceneObject placementPreviewReticleTemplate
+// @input float placementPreviewReticleScale = 1.0
 // @input bool logPinInputDebug = false
 
 var SIK = null;
@@ -22,6 +25,7 @@ var sikModulesAttempted = false;
 var sikTriggerActive = false;
 var lastSikRay = null;
 var lastSikStatusLog = -999;
+var placementPreviewReticle = null;
 
 function dbg(msg) {
   if (script.logPinInputDebug) print("[Flaneur][pin-input] " + msg);
@@ -120,6 +124,28 @@ function pinDropIsSuppressed() {
   return false;
 }
 
+function getPlacementPreviewReticle() {
+  if (placementPreviewReticle && !isNull(placementPreviewReticle)) return placementPreviewReticle;
+  var template = script.placementPreviewReticleTemplate;
+  if (!template || isNull(template)) {
+    dbg("No placement preview reticle template assigned.");
+    return null;
+  }
+  try {
+    placementPreviewReticle = script.getSceneObject().copySceneObject(template);
+    placementPreviewReticle.name = "FlaneurPlacementReticle";
+    placementPreviewReticle.enabled = false;
+  } catch (eCopy) {
+    placementPreviewReticle = null;
+    dbg("Failed to copy placement preview reticle: " + eCopy);
+  }
+  return placementPreviewReticle;
+}
+
+function hidePlacementPreview() {
+  if (placementPreviewReticle && !isNull(placementPreviewReticle)) placementPreviewReticle.enabled = false;
+}
+
 function commitWorldPosition(world, sourceLabel) {
   if (!world) return false;
   try {
@@ -147,6 +173,42 @@ function clampRayToConfiguredDistance(from, to) {
   return from.add(new vec3(dx * invLen, dy * invLen, dz * invLen).uniformScale(maxDist));
 }
 
+function hitWorldMeshFromRay(from, to) {
+  var tracker = tryGetDeviceTracking();
+  if (!tracker || isNull(tracker) || !from || !to) return null;
+  try {
+    if (tracker.raycastWorldMesh) {
+      var rayHits = tracker.raycastWorldMesh(from, clampRayToConfiguredDistance(from, to));
+      if (rayHits && rayHits.length > 0 && rayHits[0] && rayHits[0].position) return rayHits[0];
+    }
+  } catch (eRay) {}
+  return null;
+}
+
+function updatePlacementPreviewFromRay(ray) {
+  if (script.placementPreviewEnabled === false || !ray) {
+    hidePlacementPreview();
+    return null;
+  }
+  var hit = hitWorldMeshFromRay(ray.from, ray.to);
+  if (!hit || !hit.position) {
+    hidePlacementPreview();
+    return null;
+  }
+  var reticle = getPlacementPreviewReticle();
+  if (!reticle || isNull(reticle)) return hit;
+  reticle.enabled = true;
+  try {
+    var tr = reticle.getTransform();
+    tr.setWorldPosition(hit.position);
+    if (hit.normal) tr.setWorldRotation(quat.lookAt(vec3.forward(), hit.normal));
+    var sc = script.placementPreviewReticleScale;
+    if (sc === undefined || sc === null || sc <= 0) sc = 1.0;
+    tr.setWorldScale(new vec3(sc, sc, sc));
+  } catch (eTr) {}
+  return hit;
+}
+
 function commitWorldMeshFromRay(from, to, sourceLabel) {
   if (pinDropIsSuppressed()) return true;
   var tracker = tryGetDeviceTracking();
@@ -159,11 +221,9 @@ function commitWorldMeshFromRay(from, to, sourceLabel) {
     return false;
   }
   try {
-    if (tracker.raycastWorldMesh) {
-      var rayHits = tracker.raycastWorldMesh(from, clampRayToConfiguredDistance(from, to));
-      if (rayHits && rayHits.length > 0 && rayHits[0] && rayHits[0].position) {
-        return commitWorldPosition(rayHits[0].position, sourceLabel || "SIK world mesh raycast");
-      }
+    var hit = hitWorldMeshFromRay(from, to);
+    if (hit && hit.position) {
+      return commitWorldPosition(hit.position, sourceLabel || "SIK world mesh raycast");
     }
   } catch (eRay) {
     dbg("SIK raycastWorldMesh failed: " + eRay);
@@ -185,6 +245,8 @@ function updateSikTriggerPinInput() {
       break;
     }
   }
+  if (currentRay) updatePlacementPreviewFromRay(currentRay);
+  else hidePlacementPreview();
   if (triggered) {
     if (currentRay) lastSikRay = currentRay;
     sikTriggerActive = true;

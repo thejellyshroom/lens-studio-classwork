@@ -28,6 +28,9 @@
   ScriptInputsHidden:
     deviceTracking: false
     logPinInputDebug: false
+    placementPreviewEnabled: false
+    placementPreviewReticleScale: false
+    placementPreviewReticleTemplate: false
     worldCamera: false
     worldMeshRayDistance: false
   ScriptTypesHidden:
@@ -42,6 +45,9 @@
     - worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       deviceTracking: !<reference.DeviceTracking> 00000000-0000-0000-0000-000000000000
       worldMeshRayDistance: !<float> 5000.000000
+      placementPreviewEnabled: true
+      placementPreviewReticleTemplate: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      placementPreviewReticleScale: !<float> 1.000000
       logPinInputDebug: false
   ScriptTypes:
     -
