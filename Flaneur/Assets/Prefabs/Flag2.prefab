@@ -4,6 +4,51 @@
     - !<own> e9abe153-401a-4e08-8307-8d5a9b8b8627
   LazyLoading: false
   RetainAssets: true
+- !<SceneObject/0624260b-0259-480e-b93f-3fc532416508>
+  PrefabRemaps:
+    - 0624260b-0259-480e-b93f-3fc532416508: 979a8cc9-9db1-44be-4a39-4215b8e381ab
+    - 74a849e8-dc35-4195-9120-33218c362c80: a395903f-127e-487c-4398-bcff319d5a65
+  Name: SparklesVFX 1
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: -1.193230, y: 1.858696, z: -4.080059}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.666667, y: 0.666667, z: 0.666667}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 74a849e8-dc35-4195-9120-33218c362c80
+- !<VFXComponent/3c595e2a-0194-4b6c-b679-d56f29020f59>
+  PrefabRemaps:
+    []
+  Name: VFX Component
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  VFXAsset: !<reference> fe14cf41-99ff-4c05-a940-f4954fa17302
+- !<SceneObject/3d9c4226-2c89-410e-891f-6043f33f85b0>
+  PrefabRemaps:
+    []
+  Name: VFX
+  Enabled: false
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> d35ee4bc-6402-4c66-9c54-0ebdc389315e
+    - !<own> 0624260b-0259-480e-b93f-3fc532416508
+  Components:
+    []
 - !<Animation/65b39231-a93c-47b5-ab36-2190a5be7249>
   PrefabRemaps:
     []
@@ -26,6 +71,19 @@
     []
   Components:
     []
+- !<VFXComponent/74a849e8-dc35-4195-9120-33218c362c80>
+  PrefabRemaps:
+    []
+  Name: VFX Component
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  VFXAsset: !<reference> fe14cf41-99ff-4c05-a940-f4954fa17302
 - !<SceneObject/7b8d9930-39bb-40b1-91f2-66773b068df7>
   PrefabRemaps:
     []
@@ -102,6 +160,22 @@
   BlendNormals: false
   BlendShapes:
     {}
+- !<SceneObject/d35ee4bc-6402-4c66-9c54-0ebdc389315e>
+  PrefabRemaps:
+    - 3c595e2a-0194-4b6c-b679-d56f29020f59: a395903f-127e-487c-4398-bcff319d5a65
+    - d35ee4bc-6402-4c66-9c54-0ebdc389315e: 979a8cc9-9db1-44be-4a39-4215b8e381ab
+  Name: SparklesVFX
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: -1.193230, y: 1.858696, z: -4.080059}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.666667, y: 0.666667, z: 0.666667}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 3c595e2a-0194-4b6c-b679-d56f29020f59
 - !<VertexCache/d9731e57-6c95-47bd-8350-8e5f28f6805b>
   PrefabRemaps:
     []
@@ -174,13 +248,18 @@
     - !<own> da0cb960-01c7-45af-ad64-7cb30ecf4115
 - !<SceneObject/e9abe153-401a-4e08-8307-8d5a9b8b8627>
   PrefabRemaps:
+    - 0624260b-0259-480e-b93f-3fc532416508: abe10445-ed0b-4e44-96ca-f5236e514c5a
+    - 3c595e2a-0194-4b6c-b679-d56f29020f59: 9a9189bd-451b-47db-a62e-029bc9d54f88
+    - 3d9c4226-2c89-410e-891f-6043f33f85b0: ec8ca702-a7f0-4bfc-b265-38ec3bf95e83
     - 65b39231-a93c-47b5-ab36-2190a5be7249: 65b39231-a93c-47b5-54c9-de6f5a418db6
     - 72a5aa8b-5168-45a0-8dcc-23eb1b720d10: 72a5aa8b-5168-45a0-7233-dc14e48df2ef
+    - 74a849e8-dc35-4195-9120-33218c362c80: 6a68eb2b-5d89-4d37-bcb2-80d74991fdf4
     - 7b8d9930-39bb-40b1-91f2-66773b068df7: 7b8d9930-39bb-40b1-6e0d-9988c4f97208
     - a7d8e4e7-f9e9-4775-8969-b98d40299f17: a7d8e4e7-f9e9-4775-7696-4672bfd660e8
     - b2e49334-de17-4c9f-8045-0f26cda08dbd: b2e49334-de17-4c9f-7fba-f0d9325f7242
     - b825bcaf-e93c-4ab3-a04c-613557054df0: b825bcaf-e93c-4ab3-5fb3-9ecaa8fab20f
     - ba23b5d2-0704-434d-bfa1-1d8f6d92ed13: ba23b5d2-0704-434d-405e-e270926d12ec
+    - d35ee4bc-6402-4c66-9c54-0ebdc389315e: b1829dfd-b189-4603-ac1b-f81e36941029
     - d9731e57-6c95-47bd-8350-8e5f28f6805b: d9731e57-6c95-47bd-7caf-71a0d7097fa4
     - da0cb960-01c7-45af-ad64-7cb30ecf4115: da0cb960-01c7-45af-529b-834cf130beea
     - db991969-ad48-411a-8878-8b126a684b44: db991969-ad48-411a-7787-74ed9597b4bb
@@ -198,6 +277,7 @@
     HasSegmentScaleCompensation: false
   Children:
     - !<own> ddaa7aa6-e554-4cde-b1ff-e6e11b784b18
+    - !<own> 3d9c4226-2c89-410e-891f-6043f33f85b0
   Components:
     - !<own> a7d8e4e7-f9e9-4775-8969-b98d40299f17
 - !<VertexCache/f9b3653c-89f1-4e0a-b2ca-2755668b64dd>

@@ -1,50 +1,19 @@
 /**
- * Flâneur — Pin input + UI blocker sampling.
+ * Flaneur — Spectacles SIK pin input.
  *
  * Owns:
- * - Listening for taps / trigger primary (optional)
- * - (Optional) global screen pin events
- * - UI blocker sampling to prevent pin drops "through" UI
+ * - Watching SIK interactor trigger release
+ * - Raycasting the released hand ray against the Spectacles world mesh
  *
  * Calls:
  * - `global.flaneurCommitPinAtWorldPosition(worldVec3)`
- *
- * Exposes:
- * - `global.flaneurPinIsScreenOverBlockerUi(screenPos01Vec2)` used by other systems if needed
  */
 
 // @input Component.Camera worldCamera
 // @input Component.DeviceTracking deviceTracking
-// @input bool pinDropUseWorldMesh = true
-// @input bool pinDropUseScreenSpaceFallback = false
-// @input float placementDepth = 200.0
 // @input float worldMeshRayDistance = 5000.0
-// @input Component.InteractionComponent pinDropInteraction
-// @input bool pinDropFromGlobalScreenEvents = false
-// @input bool pinDropListenTriggerPrimary = false
-// @input bool pinDropListenSikTrigger = true
-// @input bool editorTouchBlockingForPreview = false
-// @input SceneObject pinDropUiBlockerRoot
-// @input SceneObject pinDropUiBlockerRootExtra
-// @input bool pinDropUseWorldUiProjectionBlock = true
-// @input float pinDropWorldUiBlockScreenRadius = 0.11
-// @input int pinDropUiWorldProjectionSampleBudget = 400
-// @input Component.Camera pinDropUiScreenSpaceCamera
-// @input bool placementPreviewEnabled = true
-// @input SceneObject placementPreviewParent
-// @input SceneObject placementPreviewReticleTemplate
-// @input SceneObject placementPreviewRayTemplate
-// @input bool placementPreviewGenerateCircle = true
-// @input float placementPreviewReticleScale = 0.35
-// @input float placementPreviewReticleCircleThickness = 0.06
-// @input int placementPreviewCircleSegments = 48
-// @input float placementPreviewRayThickness = 0.03
-// @input float placementPreviewRayMaxLength = 400.0
 // @input bool logPinInputDebug = false
 
-var blockers = [];
-var blockersDirty = true;
-var lastBlockerScanTime = -999;
 var SIK = null;
 var InteractorTriggerType = null;
 var InteractorInputType = null;
@@ -53,84 +22,10 @@ var sikModulesAttempted = false;
 var sikTriggerActive = false;
 var lastSikRay = null;
 var lastSikStatusLog = -999;
-var placementPreviewReticle = null;
-var placementPreviewRay = null;
 
 function dbg(msg) {
   if (script.logPinInputDebug) print("[Flaneur][pin-input] " + msg);
 }
-
-function info(msg) {
-  print("[Flaneur][pin-input] " + msg);
-}
-
-function clampInt(v, lo, hi) {
-  v = Math.floor(v);
-  if (v < lo) return lo;
-  if (v > hi) return hi;
-  return v;
-}
-
-function isValidSo(so) { return so && !isNull(so); }
-
-function tryGetScreenSpaceCamera() {
-  if (script.pinDropUiScreenSpaceCamera && !isNull(script.pinDropUiScreenSpaceCamera)) return script.pinDropUiScreenSpaceCamera;
-  if (script.worldCamera && !isNull(script.worldCamera)) return script.worldCamera;
-  return null;
-}
-
-function collectBlockersFromRoot(root, outArr) {
-  if (!isValidSo(root)) return;
-  outArr.push(root);
-  var n = root.getChildrenCount();
-  for (var i = 0; i < n; i++) collectBlockersFromRoot(root.getChild(i), outArr);
-}
-
-function getGlobalNavigationUiRoot() {
-  try {
-    if (typeof global !== "undefined" && global.flaneurNavigationUiRoot && !isNull(global.flaneurNavigationUiRoot)) {
-      return global.flaneurNavigationUiRoot;
-    }
-  } catch (eRoot) {}
-  return null;
-}
-
-function refreshUiBlockersIfNeeded(force) {
-  var now = getTime();
-  if (!force && !blockersDirty && now - lastBlockerScanTime < 1.0) return;
-  blockersDirty = false;
-  lastBlockerScanTime = now;
-  blockers = [];
-  collectBlockersFromRoot(script.pinDropUiBlockerRoot, blockers);
-  if (script.pinDropUiBlockerRootExtra && !isNull(script.pinDropUiBlockerRootExtra)) collectBlockersFromRoot(script.pinDropUiBlockerRootExtra, blockers);
-  collectBlockersFromRoot(getGlobalNavigationUiRoot(), blockers);
-}
-
-function getCameraViewportSize(cam) {
-  if (!cam || isNull(cam)) return null;
-  try {
-    if (typeof cam.getViewportWidth === "function" && typeof cam.getViewportHeight === "function") {
-      var w = cam.getViewportWidth();
-      var h = cam.getViewportHeight();
-      if (w > 0 && h > 0) return new vec2(w, h);
-    }
-  } catch (eViewport) {}
-  return null;
-}
-
-function screen01ToScreenPx(screen01, cam) {
-  var viewport = getCameraViewportSize(cam);
-  if (!viewport) return null;
-  return new vec2(screen01.x * viewport.x, screen01.y * viewport.y);
-}
-
-function screenPxToScreen01(screenPx, cam) {
-  var viewport = getCameraViewportSize(cam);
-  if (!viewport) return null;
-  return new vec2(screenPx.x / viewport.x, screenPx.y / viewport.y);
-}
-
-function dist2(a, b) { var dx = a.x - b.x; var dy = a.y - b.y; return dx * dx + dy * dy; }
 
 function tryGetDeviceTracking() {
   if (script.deviceTracking && !isNull(script.deviceTracking)) return script.deviceTracking;
@@ -142,58 +37,6 @@ function tryGetDeviceTracking() {
       }
     }
   } catch (eCamTracker) {}
-  return null;
-}
-
-function tryGetWorldPositionFromScreen01(screen01) {
-  var cam = script.worldCamera;
-  if (!cam || isNull(cam)) return null;
-  // Lens Studio Camera projection helpers vary by template; use unproject if available.
-  try {
-    if (cam.screenSpaceToWorldSpace) {
-      return cam.screenSpaceToWorldSpace(new vec3(screen01.x, screen01.y, script.placementDepth));
-    }
-  } catch (e1) {}
-  try {
-    if (cam.unproject) {
-      var px = screen01ToScreenPx(screen01, cam);
-      if (!px) return null;
-      return cam.unproject(new vec3(px.x, px.y, script.placementDepth));
-    }
-  } catch (e2) {}
-  return null;
-}
-
-function tryGetWorldRayFromScreen01(screen01) {
-  var cam = script.worldCamera;
-  if (!cam || isNull(cam)) return null;
-  var maxDist = script.worldMeshRayDistance;
-  if (maxDist === undefined || maxDist === null || maxDist <= 0) maxDist = 5000;
-  try {
-    if (cam.screenSpaceToWorldSpace) {
-      return {
-        from: cam.screenSpaceToWorldSpace(new vec3(screen01.x, screen01.y, 1.0)),
-        to: cam.screenSpaceToWorldSpace(new vec3(screen01.x, screen01.y, maxDist)),
-      };
-    }
-  } catch (eScreenRay) {}
-  try {
-    if (cam.unproject) {
-      var px = screen01ToScreenPx(screen01, cam);
-      if (!px) return null;
-      return {
-        from: cam.unproject(new vec3(px.x, px.y, 1.0)),
-        to: cam.unproject(new vec3(px.x, px.y, maxDist)),
-      };
-    }
-  } catch (eUnprojectRay) {}
-  try {
-    var camTr = cam.getSceneObject().getTransform();
-    var from = camTr.getWorldPosition();
-    var dir = camTr.back || camTr.forward;
-    if (!dir) return null;
-    return { from: from, to: from.add(dir.uniformScale(maxDist)) };
-  } catch (eFallbackRay) {}
   return null;
 }
 
@@ -251,189 +94,30 @@ function getRayFromSikInteractor(interactor) {
   return null;
 }
 
-function getPlacementPreviewParent() {
-  if (script.placementPreviewParent && !isNull(script.placementPreviewParent)) return script.placementPreviewParent;
-  return script.getSceneObject();
-}
-
-function createPreviewCopy(template, name) {
-  if (!template || isNull(template)) return null;
-  var parent = getPlacementPreviewParent();
-  var so = null;
-  try {
-    so = parent.copySceneObject(template);
-  } catch (eCopyParent) {
-    try {
-      so = script.getSceneObject().copySceneObject(template);
-    } catch (eCopySelf) {
-      so = null;
-    }
-  }
-  if (!so || isNull(so)) return null;
-  try {
-    so.name = name;
-  } catch (eName) {}
-  try {
-    so.setParent(parent);
-  } catch (eParent) {}
-  so.enabled = false;
-  return so;
-}
-
-function getPlacementPreviewReticle() {
-  if (placementPreviewReticle && !isNull(placementPreviewReticle)) return placementPreviewReticle;
-  if (script.placementPreviewGenerateCircle !== false) {
-    placementPreviewReticle = createGeneratedCircleReticle();
-    if (placementPreviewReticle && !isNull(placementPreviewReticle)) return placementPreviewReticle;
-  }
-  placementPreviewReticle = createPreviewCopy(script.placementPreviewReticleTemplate, "FlaneurPlacementReticle");
-  return placementPreviewReticle;
-}
-
-function getTemplateMaterial(template) {
-  if (!template || isNull(template)) return null;
-  try {
-    var rmv = template.getComponent("Component.RenderMeshVisual") || template.getComponent("RenderMeshVisual");
-    if (rmv && !isNull(rmv) && rmv.mainMaterial) return rmv.mainMaterial;
-  } catch (eRmv) {}
-  return null;
-}
-
-function makeCircleMesh(radius, segments) {
-  var builder = new MeshBuilder([{ name: "position", components: 3 }]);
-  builder.topology = MeshTopology.Triangles;
-  builder.indexType = MeshIndexType.UInt16;
-  var vertices = [0, 0, 0];
-  var indices = [];
-  for (var i = 0; i <= segments; i++) {
-    var a = (i / segments) * Math.PI * 2;
-    vertices.push(Math.cos(a) * radius, Math.sin(a) * radius, 0);
-  }
-  for (var j = 1; j <= segments; j++) {
-    indices.push(0, j, j + 1);
-  }
-  builder.appendIndices(indices);
-  builder.appendVerticesInterleaved(vertices);
-  builder.updateMesh();
-  return builder.getMesh();
-}
-
-function createGeneratedCircleReticle() {
-  var parent = getPlacementPreviewParent();
-  var so = scene.createSceneObject("FlaneurPlacementCircle");
-  so.setParent(parent);
-  so.enabled = false;
-  try {
-    var rmv = so.createComponent("Component.RenderMeshVisual");
-    var mat = getTemplateMaterial(script.placementPreviewReticleTemplate);
-    if (mat) {
-      rmv.clearMaterials();
-      rmv.mainMaterial = mat;
-    }
-    var segments = Math.max(12, Math.floor(script.placementPreviewCircleSegments || 48));
-    var reticleScale = script.placementPreviewReticleScale;
-    if (reticleScale === undefined || reticleScale === null || reticleScale <= 0) reticleScale = 3.0;
-    rmv.mesh = makeCircleMesh(reticleScale, segments);
-  } catch (eCircle) {
-    try { so.destroy(); } catch (eDestroy) {}
-    return null;
-  }
-  return so;
-}
-
-function getPlacementPreviewRay() {
-  if (placementPreviewRay && !isNull(placementPreviewRay)) return placementPreviewRay;
-  placementPreviewRay = createPreviewCopy(script.placementPreviewRayTemplate, "FlaneurPlacementRay");
-  return placementPreviewRay;
-}
-
-function hidePlacementPreview() {
-  if (placementPreviewReticle && !isNull(placementPreviewReticle)) placementPreviewReticle.enabled = false;
-  if (placementPreviewRay && !isNull(placementPreviewRay)) placementPreviewRay.enabled = false;
-}
-
-function isPinUiGloballyBlocked() {
+function pinDropIsSuppressed() {
   try {
     if (typeof global === "undefined") return false;
-    if (global.flaneurUiPressActive === true) return true;
-    if (global.flaneurSuppressPinDropUntil && getTime() < global.flaneurSuppressPinDropUntil) return true;
-    if (typeof global.flaneurPinIsSidebarOpen === "function" && global.flaneurPinIsSidebarOpen()) return true;
+    if (global.flaneurUiPressActive === true) {
+      dbg("Blocked pin drop (uiPressActive).");
+      return true;
+    }
+    if (global.flaneurSuppressPinDropUntil && getTime() < global.flaneurSuppressPinDropUntil) {
+      dbg("Blocked pin drop (suppressed).");
+      return true;
+    }
+    if (typeof global.flaneurPinIsSidebarOpen === "function" && global.flaneurPinIsSidebarOpen()) {
+      dbg("Blocked pin drop (sidebar open).");
+      return true;
+    }
     if (
       typeof global.flaneurPinIsMeshPinSuppressedAfterSidebarClose === "function" &&
       global.flaneurPinIsMeshPinSuppressedAfterSidebarClose()
     ) {
+      dbg("Blocked pin drop (sidebar close suppression).");
       return true;
     }
-  } catch (eBlock) {}
+  } catch (eUi) {}
   return false;
-}
-
-function hitWorldMeshFromRay(from, to) {
-  var tracker = tryGetDeviceTracking();
-  if (!tracker || isNull(tracker) || !from || !to) return null;
-  try {
-    if (tracker.raycastWorldMesh) {
-      var rayHits = tracker.raycastWorldMesh(from, to);
-      if (rayHits && rayHits.length > 0 && rayHits[0] && rayHits[0].position) return rayHits[0];
-    }
-  } catch (eRay) {}
-  return null;
-}
-
-function updatePlacementPreviewFromRay(ray) {
-  if (script.placementPreviewEnabled === false || !ray || isPinUiGloballyBlocked()) {
-    hidePlacementPreview();
-    return null;
-  }
-  var hit = hitWorldMeshFromRay(ray.from, ray.to);
-  if (!hit || !hit.position) {
-    hidePlacementPreview();
-    return null;
-  }
-  var reticle = getPlacementPreviewReticle();
-  if (reticle && !isNull(reticle)) {
-    reticle.enabled = true;
-    try {
-      var reticleTr = reticle.getTransform();
-      reticleTr.setWorldPosition(hit.position);
-      if (hit.normal) reticleTr.setWorldRotation(quat.lookAt(vec3.forward(), hit.normal));
-      var reticleScale = script.placementPreviewReticleScale;
-      if (reticleScale === undefined || reticleScale === null || reticleScale <= 0) reticleScale = 0.35;
-      var circleThickness = script.placementPreviewReticleCircleThickness;
-      if (circleThickness === undefined || circleThickness === null || circleThickness <= 0) circleThickness = 0.06;
-      if (script.placementPreviewGenerateCircle !== false) {
-        reticleTr.setWorldScale(new vec3(1, 1, 1));
-      } else {
-        reticleTr.setWorldScale(new vec3(reticleScale, reticleScale * circleThickness, reticleScale));
-      }
-    } catch (eReticle) {}
-  }
-  var rayObj = getPlacementPreviewRay();
-  if (rayObj && !isNull(rayObj)) {
-    var dx = hit.position.x - ray.from.x;
-    var dy = hit.position.y - ray.from.y;
-    var dz = hit.position.z - ray.from.z;
-    var len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    var maxLen = script.placementPreviewRayMaxLength;
-    if (maxLen === undefined || maxLen === null || maxLen <= 0) maxLen = 400;
-    if (len > 1e-3) {
-      var clampedLen = Math.min(len, maxLen);
-      var dir = new vec3(dx / len, dy / len, dz / len);
-      var mid = ray.from.add(dir.uniformScale(clampedLen * 0.5));
-      var thickness = script.placementPreviewRayThickness;
-      if (thickness === undefined || thickness === null || thickness <= 0) thickness = 0.03;
-      rayObj.enabled = true;
-      try {
-        var rayTr = rayObj.getTransform();
-        rayTr.setWorldPosition(mid);
-        rayTr.setWorldRotation(quat.lookAt(dir, vec3.up()));
-        rayTr.setWorldScale(new vec3(thickness, thickness, clampedLen));
-      } catch (eRayObj) {}
-    } else {
-      rayObj.enabled = false;
-    }
-  }
-  return hit;
 }
 
 function commitWorldPosition(world, sourceLabel) {
@@ -451,12 +135,20 @@ function commitWorldPosition(world, sourceLabel) {
   return false;
 }
 
+function clampRayToConfiguredDistance(from, to) {
+  var maxDist = script.worldMeshRayDistance;
+  if (maxDist === undefined || maxDist === null || maxDist <= 0) maxDist = 5000;
+  var dx = to.x - from.x;
+  var dy = to.y - from.y;
+  var dz = to.z - from.z;
+  var len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  if (len <= 1e-3 || len <= maxDist) return to;
+  var invLen = 1.0 / len;
+  return from.add(new vec3(dx * invLen, dy * invLen, dz * invLen).uniformScale(maxDist));
+}
+
 function commitWorldMeshFromRay(from, to, sourceLabel) {
-  if (script.pinDropUseWorldMesh === false) return false;
-  if (!pinIsAllowedAtScreen01(new vec2(0.5, 0.5))) {
-    dbg("Blocked world mesh ray pin drop (UI blocker).");
-    return true;
-  }
+  if (pinDropIsSuppressed()) return true;
   var tracker = tryGetDeviceTracking();
   if (!tracker || isNull(tracker)) {
     dbg("No DeviceTracking assigned for world mesh ray pin drop.");
@@ -468,7 +160,7 @@ function commitWorldMeshFromRay(from, to, sourceLabel) {
   }
   try {
     if (tracker.raycastWorldMesh) {
-      var rayHits = tracker.raycastWorldMesh(from, to);
+      var rayHits = tracker.raycastWorldMesh(from, clampRayToConfiguredDistance(from, to));
       if (rayHits && rayHits.length > 0 && rayHits[0] && rayHits[0].position) {
         return commitWorldPosition(rayHits[0].position, sourceLabel || "SIK world mesh raycast");
       }
@@ -480,227 +172,7 @@ function commitWorldMeshFromRay(from, to, sourceLabel) {
   return false;
 }
 
-function commitWorldMeshFromScreen01(screen01) {
-  if (script.pinDropUseWorldMesh === false) return false;
-  if (!pinIsAllowedAtScreen01(screen01)) {
-    dbg("Blocked world mesh pin drop (UI blocker).");
-    return true;
-  }
-  var tracker = tryGetDeviceTracking();
-  if (!tracker || isNull(tracker)) {
-    dbg("No DeviceTracking assigned for world mesh pin drop.");
-    return false;
-  }
-  try {
-    if (tracker.hitTestWorldMesh) {
-      var hits = tracker.hitTestWorldMesh(screen01);
-      if (hits && hits.length > 0 && hits[0] && hits[0].position) {
-        return commitWorldPosition(hits[0].position, "world mesh hitTest");
-      }
-    }
-  } catch (eHit) {
-    dbg("hitTestWorldMesh failed: " + eHit);
-  }
-  try {
-    if (tracker.raycastWorldMesh) {
-      var ray = tryGetWorldRayFromScreen01(screen01);
-      if (ray && ray.from && ray.to) {
-        var rayHits = tracker.raycastWorldMesh(ray.from, ray.to);
-        if (rayHits && rayHits.length > 0 && rayHits[0] && rayHits[0].position) {
-          return commitWorldPosition(rayHits[0].position, "world mesh raycast");
-        }
-      }
-    }
-  } catch (eRay) {
-    dbg("raycastWorldMesh failed: " + eRay);
-  }
-  dbg("No world mesh hit at screen " + screen01.x.toFixed(2) + "," + screen01.y.toFixed(2) + ". Scan surfaces and confirm World Mesh + DeviceTracking are enabled.");
-  return false;
-}
-
-function isTapOverPinDropUiBlocker(screen01) {
-  if (!script.pinDropUseWorldUiProjectionBlock) return false;
-  if (!blockers || blockers.length === 0) return false;
-  var cam = tryGetScreenSpaceCamera();
-  if (!cam) return false;
-
-  var budget = clampInt(script.pinDropUiWorldProjectionSampleBudget || 0, 0, 5000);
-  if (budget <= 0) return false;
-
-  var viewport = getCameraViewportSize(cam);
-  if (!viewport) return false;
-  var screenPx = screen01ToScreenPx(screen01, cam);
-  if (!screenPx) return false;
-  var r = Math.max(0.0, script.pinDropWorldUiBlockScreenRadius || 0.0);
-  var rPx = r * Math.max(viewport.x, viewport.y);
-  var rPx2 = rPx * rPx;
-
-  // Sample a subset of blockers by budget; stable stride over array.
-  var n = blockers.length;
-  var stride = Math.max(1, Math.floor(n / Math.max(1, budget)));
-  var samples = 0;
-
-  for (var i = 0; i < n && samples < budget; i += stride) {
-    var so = blockers[i];
-    if (!isValidSo(so) || !so.enabled) continue;
-    var tr = so.getTransform();
-    if (!tr) continue;
-    var wpos = tr.getWorldPosition();
-    var sp01 = null;
-    try {
-      if (cam.worldSpaceToScreenSpace) sp01 = cam.worldSpaceToScreenSpace(wpos);
-      else if (cam.project) {
-        var sp = cam.project(wpos);
-        sp01 = screenPxToScreen01(new vec2(sp.x, sp.y), cam);
-      }
-    } catch (eP) {}
-    if (!sp01) continue;
-    var spPx = screen01ToScreenPx(new vec2(sp01.x, sp01.y), cam);
-    if (!spPx) continue;
-    if (dist2(spPx, screenPx) <= rPx2) return true;
-    samples++;
-  }
-  return false;
-}
-
-function isTapOverNavigationUi(screen01) {
-  var navRoot = getGlobalNavigationUiRoot();
-  if (!isValidSo(navRoot) || !navRoot.enabled) return false;
-  var cam = tryGetScreenSpaceCamera();
-  if (!cam) return false;
-  var viewport = getCameraViewportSize(cam);
-  if (!viewport) return false;
-  var screenPx = screen01ToScreenPx(screen01, cam);
-  if (!screenPx) return false;
-  var r = Math.max(script.pinDropWorldUiBlockScreenRadius || 0.0, 0.18);
-  var rPx = r * Math.max(viewport.x, viewport.y);
-  var rPx2 = rPx * rPx;
-  var stack = [navRoot];
-  var visited = 0;
-  while (stack.length > 0 && visited < 500) {
-    var so = stack.pop();
-    visited++;
-    if (!isValidSo(so) || !so.enabled) continue;
-    try {
-      var sp01 = null;
-      var wpos = so.getTransform().getWorldPosition();
-      if (cam.worldSpaceToScreenSpace) sp01 = cam.worldSpaceToScreenSpace(wpos);
-      else if (cam.project) {
-        var sp = cam.project(wpos);
-        sp01 = screenPxToScreen01(new vec2(sp.x, sp.y), cam);
-      }
-      if (sp01) {
-        var spPx = screen01ToScreenPx(new vec2(sp01.x, sp01.y), cam);
-        if (!spPx) continue;
-        if (dist2(spPx, screenPx) <= rPx2) return true;
-      }
-    } catch (eProj) {}
-    try {
-      var n = so.getChildrenCount();
-      for (var i = 0; i < n; i++) stack.push(so.getChild(i));
-    } catch (eChildren) {}
-  }
-  return false;
-}
-
-function pinIsAllowedAtScreen01(screen01) {
-  try {
-    if (typeof global !== "undefined") {
-      if (global.flaneurUiPressActive === true) {
-        dbg("Blocked pin drop (uiPressActive).");
-        return false;
-      }
-      if (global.flaneurSuppressPinDropUntil && getTime() < global.flaneurSuppressPinDropUntil) {
-        dbg("Blocked pin drop (suppressed).");
-        return false;
-      }
-      if (typeof global.flaneurPinIsSidebarOpen === "function" && global.flaneurPinIsSidebarOpen()) {
-        dbg("Blocked pin drop (sidebar open).");
-        return false;
-      }
-      if (
-        typeof global.flaneurPinIsMeshPinSuppressedAfterSidebarClose === "function" &&
-        global.flaneurPinIsMeshPinSuppressedAfterSidebarClose()
-      ) {
-        dbg("Blocked pin drop (sidebar close suppression).");
-        return false;
-      }
-    }
-  } catch (eUi) {}
-  refreshUiBlockersIfNeeded(false);
-  if (isTapOverNavigationUi(screen01)) {
-    dbg("Blocked pin drop (navigation UI).");
-    return false;
-  }
-  if (isTapOverPinDropUiBlocker(screen01)) return false;
-  return true;
-}
-
-function commitFromScreen01(screen01, skipWorldMesh) {
-  if (skipWorldMesh !== true && commitWorldMeshFromScreen01(screen01)) {
-    return;
-  }
-  if (script.pinDropUseWorldMesh !== false && script.pinDropUseScreenSpaceFallback !== true) {
-    return;
-  }
-  if (!pinIsAllowedAtScreen01(screen01)) {
-    dbg("Blocked pin drop (UI blocker).");
-    return;
-  }
-  var world = tryGetWorldPositionFromScreen01(screen01);
-  if (!world) {
-    dbg("Failed to compute world point from screen.");
-    return;
-  }
-  try {
-    if (typeof global !== "undefined" && typeof global.flaneurCommitPinAtWorldPosition === "function") {
-      global.flaneurCommitPinAtWorldPosition(world);
-    }
-  } catch (e) {}
-}
-
-function getPrimaryScreen01FromInteractionEvent(e) {
-  // Try common fields used by SIK / interaction templates.
-  try {
-    if (e && e.screenPosition) return new vec2(e.screenPosition.x, e.screenPosition.y);
-  } catch (e0) {}
-  try {
-    if (e && e.position && typeof e.position.x === "number") return new vec2(e.position.x, e.position.y);
-  } catch (e1) {}
-  return new vec2(0.5, 0.5);
-}
-
-function bindInteraction() {
-  if (!script.pinDropInteraction || isNull(script.pinDropInteraction)) return;
-  try {
-    if (script.pinDropInteraction.onTap) {
-      script.pinDropInteraction.onTap.add(function (e) {
-        commitFromScreen01(getPrimaryScreen01FromInteractionEvent(e));
-      });
-      return;
-    }
-  } catch (eA) {}
-  // Fallback: TapEvent on this component (older patterns)
-  try {
-    script.createEvent("TapEvent").bind(function (e) {
-      commitFromScreen01(getPrimaryScreen01FromInteractionEvent(e));
-    });
-  } catch (eB) {}
-}
-
-function bindTriggerPrimaryIfEnabled() {
-  if (!script.pinDropListenTriggerPrimary) return;
-  try {
-    script.createEvent("TriggerPrimaryEvent").bind(function () {
-      if (!commitWorldMeshFromScreen01(new vec2(0.5, 0.5))) {
-        commitFromScreen01(new vec2(0.5, 0.5), true);
-      }
-    });
-  } catch (e) {}
-}
-
 function updateSikTriggerPinInput() {
-  if (script.pinDropListenSikTrigger === false) return;
   var interactors = getSikInteractors();
   var triggered = false;
   var currentRay = null;
@@ -713,8 +185,6 @@ function updateSikTriggerPinInput() {
       break;
     }
   }
-  if (currentRay) updatePlacementPreviewFromRay(currentRay);
-  else hidePlacementPreview();
   if (triggered) {
     if (currentRay) lastSikRay = currentRay;
     sikTriggerActive = true;
@@ -727,7 +197,7 @@ function updateSikTriggerPinInput() {
       lastSikRay = null;
       return;
     }
-    commitWorldMeshFromScreen01(new vec2(0.5, 0.5));
+    dbg("SIK trigger released without a usable ray.");
   }
   if (script.logPinInputDebug) {
     var now = getTime();
@@ -738,45 +208,10 @@ function updateSikTriggerPinInput() {
   }
 }
 
-function bindGlobalScreenPinEventsIfEnabled() {
-  if (!script.pinDropFromGlobalScreenEvents) return;
-  try {
-    if (typeof global !== "undefined") {
-      global.flaneurGlobalScreenPinDrop = function (screen01) {
-        if (!screen01) screen01 = new vec2(0.5, 0.5);
-        commitFromScreen01(screen01);
-      };
-    }
-  } catch (e) {}
-}
-
-function setEditorTouchBlockingForPreview(enabled) {
-  // This is a best-effort no-op if unavailable.
-  try {
-    if (typeof global !== "undefined" && global.deviceInfoSystem && global.deviceInfoSystem.isEditor && global.deviceInfoSystem.isEditor()) {
-      // Some templates gate touch blocking behind InteractionKit settings; leave as-is if not found.
-    }
-  } catch (e) {}
-}
-
 script.createEvent("TurnOnEvent").bind(function () {
-  try {
-    if (typeof global !== "undefined") {
-      global.flaneurPinIsScreenOverBlockerUi = function (screen01) {
-        refreshUiBlockersIfNeeded(false);
-        return isTapOverPinDropUiBlocker(screen01 || new vec2(0.5, 0.5));
-      };
-    }
-  } catch (e) {}
-  setEditorTouchBlockingForPreview(!!script.editorTouchBlockingForPreview);
-  bindInteraction();
-  bindTriggerPrimaryIfEnabled();
-  bindGlobalScreenPinEventsIfEnabled();
-  refreshUiBlockersIfNeeded(true);
-  dbg("ready worldMesh=" + (script.pinDropUseWorldMesh !== false) + " triggerPrimary=" + (script.pinDropListenTriggerPrimary === true) + " sikTrigger=" + (script.pinDropListenSikTrigger !== false) + " deviceTracking=" + !!tryGetDeviceTracking());
+  dbg("ready sikTrigger=true worldMeshRaycast=true deviceTracking=" + !!tryGetDeviceTracking());
 });
 
 script.createEvent("UpdateEvent").bind(function () {
   updateSikTriggerPinInput();
 });
-

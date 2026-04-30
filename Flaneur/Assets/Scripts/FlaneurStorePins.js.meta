@@ -34,9 +34,7 @@
     markersRoot: false
     pinPrefab: false
     pinSpawnOffset: false
-    pinSpawnYOffset: false
     pinStoreCoordinateRoot: false
-    pinTemplate: false
     useSpectaclesSyncKit: false
     worldCamera: false
   ScriptTypesHidden:
@@ -51,10 +49,8 @@
     - connectedLensModule: !<reference.ConnectedLensModule> 00000000-0000-0000-0000-000000000000
       markersRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pinStoreCoordinateRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      pinTemplate: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       pinPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
       pinSpawnOffset: !<Vec3> {x: 0.000000, y: 6.000000, z: 0.000000}
-      pinSpawnYOffset: !<float> 6.000000
       worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       autoShareOnSoloConnect: true
       useSpectaclesSyncKit: true

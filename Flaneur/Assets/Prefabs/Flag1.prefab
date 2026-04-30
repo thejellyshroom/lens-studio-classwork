@@ -65,6 +65,22 @@
     - !<own> f6ceabe3-02ce-4b17-bbf2-3060233fd7b2
     - !<own> fa107f66-5e86-45a4-adc0-2ba4239f0333
     - !<own> 053d5d19-02c3-4b32-95a4-e420ba45de8c
+- !<SceneObject/2a7d5943-3fe3-4f07-81c1-d194b06a06de>
+  PrefabRemaps:
+    - 2a7d5943-3fe3-4f07-81c1-d194b06a06de: 979a8cc9-9db1-44be-4a39-4215b8e381ab
+    - cba40244-892e-449f-8b00-b23ce5133c8d: a395903f-127e-487c-4398-bcff319d5a65
+  Name: SparklesVFX 1
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: -1.193230, y: 1.858696, z: -4.080059}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.666667, y: 0.666667, z: 0.666667}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> cba40244-892e-449f-8b00-b23ce5133c8d
 - !<SceneObject/48438ee8-fd62-440d-b4dc-daba8dbf0d78>
   PrefabRemaps:
     []
@@ -93,6 +109,22 @@
     - !<reference> b060e9e8-2124-4936-94b0-0f4c20347869
   Autoplay: true
   Version: FBX
+- !<SceneObject/519c96a9-db12-4466-a16e-3f5754704142>
+  PrefabRemaps:
+    - 519c96a9-db12-4466-a16e-3f5754704142: 979a8cc9-9db1-44be-4a39-4215b8e381ab
+    - e700c87f-d8a2-4889-9b3f-4f61ad871a4b: a395903f-127e-487c-4398-bcff319d5a65
+  Name: SparklesVFX
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: -1.193230, y: 1.858696, z: -4.080059}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.666667, y: 0.666667, z: 0.666667}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> e700c87f-d8a2-4889-9b3f-4f61ad871a4b
 - !<RenderMeshVisual/91bb1028-31bf-49f4-96b9-ebb9801dfc5c>
   PrefabRemaps:
     []
@@ -120,6 +152,19 @@
   Enabled: true
   AnimationLayers:
     BaseLayer: !<reference> 2b4d2d40-d3c4-4b1e-9c45-1f51fdd975ae
+- !<VFXComponent/cba40244-892e-449f-8b00-b23ce5133c8d>
+  PrefabRemaps:
+    []
+  Name: VFX Component
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  VFXAsset: !<reference> fe14cf41-99ff-4c05-a940-f4954fa17302
 - !<SceneObject/ddc9ff9d-b43d-4c5b-a55c-f859943b347f>
   PrefabRemaps:
     []
@@ -152,6 +197,19 @@
     - !<own> 91bb1028-31bf-49f4-96b9-ebb9801dfc5c
     - !<own> 0ad97a95-b6ac-49d3-8eb4-5b1b8e5e81e1
     - !<own> ae3b5159-623c-4d6b-9097-0126f3d449b3
+- !<VFXComponent/e700c87f-d8a2-4889-9b3f-4f61ad871a4b>
+  PrefabRemaps:
+    []
+  Name: VFX Component
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  VFXAsset: !<reference> fe14cf41-99ff-4c05-a940-f4954fa17302
 - !<SceneObject/f13f485b-99f6-4036-a1b5-97afe78bc6a5>
   PrefabRemaps:
     - 053d5d19-02c3-4b32-95a4-e420ba45de8c: 053d5d19-02c3-4b32-6a5b-1bdf45ba2173
@@ -159,13 +217,18 @@
     - 0ad97a95-b6ac-49d3-8eb4-5b1b8e5e81e1: 0ad97a95-b6ac-49d3-714b-a4e471a17e1e
     - 23d573ad-fcaa-4b81-98bf-949166c72ce1: 23d573ad-fcaa-4b81-6740-6b6e9938d31e
     - 27788687-a635-428e-be4e-20fa1c8d31f7: 27788687-a635-428e-41b1-df05e372ce08
+    - 2a7d5943-3fe3-4f07-81c1-d194b06a06de: 535e62f7-9e1f-473a-8436-5660a3320d36
     - 48438ee8-fd62-440d-b4dc-daba8dbf0d78: 48438ee8-fd62-440d-4b23-25457240f287
     - 5047986b-feb4-4c67-a3ce-bbb9d53490ba: 5047986b-feb4-4c67-5c31-44462acb6f45
+    - 519c96a9-db12-4466-a16e-3f5754704142: 5cdc16f3-8f07-49a6-b91c-41ed1658d7e1
     - 91bb1028-31bf-49f4-96b9-ebb9801dfc5c: 91bb1028-31bf-49f4-6946-14467fe203a3
     - ae3b5159-623c-4d6b-9097-0126f3d449b3: ae3b5159-623c-4d6b-6f68-fed90c2bb64c
+    - cba40244-892e-449f-8b00-b23ce5133c8d: 9fd758ff-01c7-44fb-8caa-b36ab7287279
     - ddc9ff9d-b43d-4c5b-a55c-f859943b347f: ddc9ff9d-b43d-4c5b-5aa3-07a66bc4cb80
     - e1cb96b3-bc9d-4dd6-b6ef-3495bbafb41c: e1cb96b3-bc9d-4dd6-4910-cb6a44504be3
+    - e700c87f-d8a2-4889-9b3f-4f61ad871a4b: 98606617-5350-4d79-bf2c-9cd2c3729a7a
     - f13f485b-99f6-4036-a1b5-97afe78bc6a5: f13f485b-99f6-4036-5e4a-68501874395a
+    - f145a91f-58d7-403b-936b-2148719a93a1: 7747bf74-39a8-466f-a429-de00e594b760
     - f6ceabe3-02ce-4b17-bbf2-3060233fd7b2: f6ceabe3-02ce-4b17-440d-cf9fdcc0284d
     - fa107f66-5e86-45a4-adc0-2ba4239f0333: fa107f66-5e86-45a4-523f-d45bdc60fccc
   Name: Flag1
@@ -178,8 +241,25 @@
     HasSegmentScaleCompensation: false
   Children:
     - !<own> 48438ee8-fd62-440d-b4dc-daba8dbf0d78
+    - !<own> f145a91f-58d7-403b-936b-2148719a93a1
   Components:
     - !<own> 5047986b-feb4-4c67-a3ce-bbb9d53490ba
+- !<SceneObject/f145a91f-58d7-403b-936b-2148719a93a1>
+  PrefabRemaps:
+    []
+  Name: VFX
+  Enabled: false
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 519c96a9-db12-4466-a16e-3f5754704142
+    - !<own> 2a7d5943-3fe3-4f07-81c1-d194b06a06de
+  Components:
+    []
 - !<RenderMeshVisual/f6ceabe3-02ce-4b17-bbf2-3060233fd7b2>
   PrefabRemaps:
     []

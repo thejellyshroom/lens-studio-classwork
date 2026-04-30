@@ -16,10 +16,8 @@
 // @input Asset.ConnectedLensModule connectedLensModule
 // @input SceneObject markersRoot
 // @input SceneObject pinStoreCoordinateRoot
-// @input SceneObject pinTemplate
 // @input Asset.ObjectPrefab pinPrefab
 // @input vec3 pinSpawnOffset = {22, 48, 0}
-// @input float pinSpawnYOffset = 48.0
 // @input Component.Camera worldCamera
 // @input bool autoShareOnSoloConnect = true
 // @input bool useSpectaclesSyncKit = true
@@ -543,8 +541,6 @@ function getPinInstanceParent() {
   return getMarkersParent();
 }
 
-function getPinTemplateCopyParent() { return getMarkersParent(); }
-
 function getPinStoreCoordinateRoot() {
   var cr = script.pinStoreCoordinateRoot;
   if (cr && !isNull(cr)) return cr;
@@ -712,11 +708,8 @@ function onSidebarOpenChangedForPinMeshOcclusion(isSidebarOpen) { applyPinCollid
 
 function spawnPinObject() {
   var parent = getPinInstanceParent();
-  var copyParent = getPinTemplateCopyParent();
-  var template = script.pinTemplate;
   var so;
-  // Prefer instantiating from a Prefab asset when provided. This is the most reliable
-  // way to spawn animated prefabs (keeps internal enabled/component state intact).
+  // Instantiate the configured prefab asset so animated pin prefabs stay intact.
   var prefab = script.pinPrefab;
   if (prefab && !isNull(prefab) && typeof prefab.instantiate === "function") {
     try {
@@ -727,13 +720,8 @@ function spawnPinObject() {
     }
   }
   if (!so || isNull(so)) {
-    if (template && !isNull(template)) {
-      so = copyParent.copySceneObject(template);
-      try { so.setParent(parent); } catch (ePar) {}
-    } else {
-      so = scene.createSceneObject("FlaneurPin");
-      so.setParent(parent);
-    }
+    so = scene.createSceneObject("FlaneurPin");
+    so.setParent(parent);
   }
   // Some prefabs (especially animated ones) can have disabled children; ensure visibility.
   setEnabledOnSubtree(so, true);
@@ -756,9 +744,6 @@ function upsertMarkerScene(data) {
   }
   var off = script.pinSpawnOffset;
   if (!off || off.x === undefined) off = new vec3(0, 0, 0);
-  // Back-compat: if older scenes only set Y offset, apply it.
-  var legacyY = script.pinSpawnYOffset;
-  if (legacyY !== undefined && legacyY !== null && legacyY !== 0) off = off.add(new vec3(0, legacyY, 0));
   if (useColocatedParent) {
     so.getTransform().setLocalPosition(localVec.add(off));
   } else {

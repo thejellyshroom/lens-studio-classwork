@@ -103,6 +103,54 @@
     - !<reference> b060e9e8-2124-4936-94b0-0f4c20347869
   Autoplay: true
   Version: FBX
+- !<SceneObject/535e62f7-9e1f-473a-8436-5660a3320d36>
+  PrefabRemaps:
+    - 535e62f7-9e1f-473a-8436-5660a3320d36: 979a8cc9-9db1-44be-4a39-4215b8e381ab
+    - 9fd758ff-01c7-44fb-8caa-b36ab7287279: a395903f-127e-487c-4398-bcff319d5a65
+  Name: SparklesVFX 1
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: -1.193230, y: 1.858696, z: -4.080059}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.666667, y: 0.666667, z: 0.666667}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 9fd758ff-01c7-44fb-8caa-b36ab7287279
+- !<SceneObject/5cdc16f3-8f07-49a6-b91c-41ed1658d7e1>
+  PrefabRemaps:
+    - 5cdc16f3-8f07-49a6-b91c-41ed1658d7e1: 979a8cc9-9db1-44be-4a39-4215b8e381ab
+    - 98606617-5350-4d79-bf2c-9cd2c3729a7a: a395903f-127e-487c-4398-bcff319d5a65
+  Name: SparklesVFX
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: -1.193230, y: 1.858696, z: -4.080059}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 0.666667, y: 0.666667, z: 0.666667}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 98606617-5350-4d79-bf2c-9cd2c3729a7a
+- !<SceneObject/7747bf74-39a8-466f-a429-de00e594b760>
+  PrefabRemaps:
+    []
+  Name: VFX
+  Enabled: false
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 5cdc16f3-8f07-49a6-b91c-41ed1658d7e1
+    - !<own> 535e62f7-9e1f-473a-8436-5660a3320d36
+  Components:
+    []
 - !<RenderMeshVisual/91bb1028-31bf-49f4-6946-14467fe203a3>
   PrefabRemaps:
     []
@@ -123,6 +171,32 @@
   BlendNormals: false
   BlendShapes:
     {}
+- !<VFXComponent/98606617-5350-4d79-bf2c-9cd2c3729a7a>
+  PrefabRemaps:
+    []
+  Name: VFX Component
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  VFXAsset: !<reference> fe14cf41-99ff-4c05-a940-f4954fa17302
+- !<VFXComponent/9fd758ff-01c7-44fb-8caa-b36ab7287279>
+  PrefabRemaps:
+    []
+  Name: VFX Component
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  VFXAsset: !<reference> fe14cf41-99ff-4c05-a940-f4954fa17302
 - !<Animation/ae3b5159-623c-4d6b-6f68-fed90c2bb64c>
   PrefabRemaps:
     []
@@ -180,6 +254,7 @@
     HasSegmentScaleCompensation: false
   Children:
     - !<own> 48438ee8-fd62-440d-4b23-25457240f287
+    - !<own> 7747bf74-39a8-466f-a429-de00e594b760
   Components:
     - !<own> 5047986b-feb4-4c67-5c31-44462acb6f45
 - !<RenderMeshVisual/f6ceabe3-02ce-4b17-440d-cf9fdcc0284d>
