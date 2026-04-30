@@ -37,6 +37,8 @@
 // @input float compassHudLocalY = 7 {"label":"Hud local Y (up)"}
 // @input float compassHudLocalZ = -18 {"label":"Hud local Z (neg = in front; closer to 0 = nearer camera)"}
 // @input float compassNeedleExtraEulerX = 90 {"label":"Needle extra euler X (deg, after aim-at-peer)"}
+// @input float compassNeedleExtraEulerY = 0 {"label":"Needle extra euler Y (deg, after aim-at-peer)"}
+// @input float compassNeedleExtraEulerZ = 0 {"label":"Needle extra euler Z (deg, after aim-at-peer)"}
 // @input float publishInterval = 0.2
 // @input float staleSeconds = 5
 // @input bool limitCompassByDistance = false {"label":"Limit Compass By Distance (off unless you need it)"}
@@ -505,7 +507,7 @@ function directionWorldToPeer(fromW, peerW, horizontalOnly) {
 }
 
 /**
- * Orients the needle so **local +Z** aligns with `dirWorld`, then applies extra **local X** euler (cone tilt).
+ * Orients the needle so **local +Z** aligns with `dirWorld`, then applies extra local euler correction.
  * Mount rotation is ignored here — we must bake mesh correction into the needle world rotation each frame.
  */
 function aimNeedleWorldPlusZAtDirection(needleSo, dirWorld) {
@@ -524,9 +526,17 @@ function aimNeedleWorldPlusZAtDirection(needleSo, dirWorld) {
   if (rx === undefined || rx === null) {
     rx = 0;
   }
+  var ry = script.compassNeedleExtraEulerY;
+  if (ry === undefined || ry === null) {
+    ry = 0;
+  }
+  var rz = script.compassNeedleExtraEulerZ;
+  if (rz === undefined || rz === null) {
+    rz = 0;
+  }
   try {
-    if (Math.abs(rx) > 1e-4) {
-      var qTilt = quat.fromEulerAngles(degToRad(rx), 0, 0);
+    if (Math.abs(rx) > 1e-4 || Math.abs(ry) > 1e-4 || Math.abs(rz) > 1e-4) {
+      var qTilt = quat.fromEulerAngles(degToRad(rx), degToRad(ry), degToRad(rz));
       q = q.multiply(qTilt);
     }
     tr.setWorldRotation(q);

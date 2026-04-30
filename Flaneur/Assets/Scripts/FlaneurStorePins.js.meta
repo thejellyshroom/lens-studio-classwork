@@ -30,6 +30,7 @@
     bluePinPrefab: false
     capturePinPhotos: false
     connectedLensModule: false
+    forcePinSparklesOn: false
     logNetworkDebug: false
     logPinInputDebug: false
     markersRoot: false
@@ -55,6 +56,7 @@
       redPinPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
       pinSpawnOffset: !<Vec3> {x: 0.000000, y: 6.000000, z: 0.000000}
       pinSparkleDistance: !<float> 150.000000
+      forcePinSparklesOn: false
       worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       autoShareOnSoloConnect: true
       useSpectaclesSyncKit: true

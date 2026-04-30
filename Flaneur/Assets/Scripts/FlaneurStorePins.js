@@ -20,6 +20,7 @@
 // @input Asset.ObjectPrefab redPinPrefab
 // @input vec3 pinSpawnOffset = {22, 48, 0}
 // @input float pinSparkleDistance = 150.0
+// @input bool forcePinSparklesOn = false
 // @input Component.Camera worldCamera
 // @input bool autoShareOnSoloConnect = true
 // @input bool useSpectaclesSyncKit = true
@@ -55,6 +56,8 @@ var markerById = {};
 var markerColorById = {};
 var markerVfxRootById = {};
 var markerVfxEnabledById = {};
+var markerVfxWarnedMissingById = {};
+var markerVfxLastDebugById = {};
 
 var syncKitSc = null;
 var syncKitWired = false;
@@ -659,6 +662,8 @@ function clearAllMarkerObjects() {
   markerColorById = {};
   markerVfxRootById = {};
   markerVfxEnabledById = {};
+  markerVfxWarnedMissingById = {};
+  markerVfxLastDebugById = {};
 }
 
 function removeMarkerForKey(key) {
@@ -669,6 +674,8 @@ function removeMarkerForKey(key) {
   delete markerColorById[id];
   delete markerVfxRootById[id];
   delete markerVfxEnabledById[id];
+  delete markerVfxWarnedMissingById[id];
+  delete markerVfxLastDebugById[id];
 }
 
 function ensurePinDropToastFlushLoop() {
@@ -766,19 +773,38 @@ function setEnabledOnSubtree(so, enabled) {
   for (var i = 0; i < nc; i++) setEnabledOnSubtree(so.getChild(i), enabled);
 }
 
-function findVfxRoot(so) {
+function findExactVfxRoot(so) {
   if (!so || isNull(so)) return null;
   try {
     var name = String(so.name || "").toLowerCase();
-    if (name === "vfx" || name.indexOf("vfx") >= 0) return so;
+    if (name === "vfx") return so;
   } catch (eName) {}
   var nc = 0;
   try { nc = so.getChildrenCount(); } catch (eChildren) { nc = 0; }
   for (var i = 0; i < nc; i++) {
-    var found = findVfxRoot(so.getChild(i));
+    var found = findExactVfxRoot(so.getChild(i));
     if (found && !isNull(found)) return found;
   }
   return null;
+}
+
+function findAnyVfxRoot(so) {
+  if (!so || isNull(so)) return null;
+  try {
+    var name = String(so.name || "").toLowerCase();
+    if (name.indexOf("vfx") >= 0) return so;
+  } catch (eName) {}
+  var nc = 0;
+  try { nc = so.getChildrenCount(); } catch (eChildren) { nc = 0; }
+  for (var i = 0; i < nc; i++) {
+    var found = findAnyVfxRoot(so.getChild(i));
+    if (found && !isNull(found)) return found;
+  }
+  return null;
+}
+
+function findVfxRoot(so) {
+  return findExactVfxRoot(so) || findAnyVfxRoot(so);
 }
 
 function setMarkerVfxEnabled(id, enabled) {
@@ -788,6 +814,7 @@ function setMarkerVfxEnabled(id, enabled) {
   if (markerVfxEnabledById[id] === want) return;
   markerVfxEnabledById[id] = want;
   setEnabledOnSubtree(vfxRoot, want);
+  dbgPin("VFX " + (want ? "enabled" : "disabled") + " for pin " + id + " (scene subtree).");
 }
 
 function distSq3(a, b) {
@@ -832,6 +859,17 @@ function isAnyStoredPeerCloseToWorldPosition(worldPos, maxDistSq) {
 function updateMarkerProximityVfx(id) {
   var so = markerById[id];
   if (!so || isNull(so)) return;
+  if (!markerVfxRootById[id] || isNull(markerVfxRootById[id])) {
+    if (!markerVfxWarnedMissingById[id]) {
+      markerVfxWarnedMissingById[id] = true;
+      dbgPin("No VFX root found for pin " + id + ". Name the sparkle parent exactly 'vfx' (preferred) or include 'vfx' in the name.");
+    }
+    return;
+  }
+  if (script.forcePinSparklesOn === true) {
+    setMarkerVfxEnabled(id, true);
+    return;
+  }
   var worldPos = null;
   try { worldPos = so.getTransform().getWorldPosition(); } catch (ePos) { worldPos = null; }
   if (!worldPos) {
@@ -841,8 +879,22 @@ function updateMarkerProximityVfx(id) {
   var maxDist = getPinSparkleDistance();
   var maxDistSq = maxDist * maxDist;
   var localCamPos = getLocalCameraWorldPosition();
-  var close = !!(localCamPos && distSq3(localCamPos, worldPos) <= maxDistSq);
+  var localDistSq = localCamPos ? distSq3(localCamPos, worldPos) : -1;
+  var close = !!(localCamPos && localDistSq <= maxDistSq);
   if (!close) close = isAnyStoredPeerCloseToWorldPosition(worldPos, maxDistSq);
+  if (script.logPinInputDebug) {
+    var now = getTime();
+    var last = markerVfxLastDebugById[id] || -999;
+    if (now - last > 2.0) {
+      markerVfxLastDebugById[id] = now;
+      dbgPin(
+        "VFX check pin " + id +
+        " close=" + close +
+        " localDist=" + (localDistSq >= 0 ? Math.sqrt(localDistSq).toFixed(1) : "no-camera") +
+        " threshold=" + maxDist.toFixed(1)
+      );
+    }
+  }
   setMarkerVfxEnabled(id, close);
 }
 
@@ -918,6 +970,9 @@ function upsertMarkerScene(data) {
     markerColorById[id] = color;
     markerVfxRootById[id] = findVfxRoot(so);
     markerVfxEnabledById[id] = null;
+    if (markerVfxRootById[id] && !isNull(markerVfxRootById[id])) {
+      dbgPin("Found VFX root '" + markerVfxRootById[id].name + "' for pin " + id + ".");
+    }
     setMarkerVfxEnabled(id, false);
   }
   var pinParent = getPinInstanceParent();

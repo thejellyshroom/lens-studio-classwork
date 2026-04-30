@@ -1938,6 +1938,7 @@
   ScriptAsset: !<reference> 7900ea41-f3dc-4d71-8787-7922a91c53a7
   ScriptInputsDefault:
     sidebarToggleInteraction: true
+    logUiDebug: true
     directly: true
   ScriptTypesDefault:
     {}
@@ -1962,7 +1963,7 @@
       pinRowSlot7: !<reference.SceneObject> 8405d4d6-8bed-4724-b937-c7c1c0a9f1cf
       sidebarCloseIconTexture: !<reference.Texture> 73b20c35-a336-410d-9897-bdca3d55577c
       headFollowUiRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
-      logUiDebug: true
+      logUiDebug: false
       directly: !<RequiredType.fields> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     "":
@@ -5423,6 +5424,26 @@
   ScriptTypes:
     "":
       {}
+- !<RenderMeshVisual/2e606350-b816-4915-a9e2-56796e2a63cc>
+  PrefabRemaps:
+    []
+  Name: Arrow_Material.001_0
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> e987d17b-e811-4bbe-b9bb-4f36c8db2e26
+  Mesh: !<reference> 4cc41427-e657-485c-a8f7-d504d453bc67
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
 - !<SceneObject/2ebcd975-40da-419d-bb10-4f83893768ab>
   PrefabRemaps:
     []
@@ -13301,6 +13322,7 @@
   ScriptAsset: !<reference> 42eced25-ffdb-4321-9c50-5b517fef7c41
   ScriptInputsDefault:
     worldMeshRayDistance: true
+    logPinInputDebug: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -13308,7 +13330,7 @@
       worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
       deviceTracking: !<reference.DeviceTracking> 9dda2952-4001-491b-84ba-366e9d4db33f
       worldMeshRayDistance: !<float> 5000.000000
-      logPinInputDebug: true
+      logPinInputDebug: false
   ScriptTypes:
     "":
       {}
@@ -14941,12 +14963,10 @@
     reparentCompassMountToWorldCamera: true
     applyHudPlacementFromScript: true
     compassHudLocalZ: true
-    compassNeedleExtraEulerX: true
     publishInterval: true
     staleSeconds: true
     limitCompassByDistance: true
     maxWorldDistance: true
-    needleUniformScale: true
     stackSpacing: true
     peerCompassEnabled: true
     compassBearingHorizontalOnly: true
@@ -14957,18 +14977,20 @@
     "":
       worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
       compassMount: !<reference.SceneObject> d172fd2d-ca5f-4e21-996f-a9a0c9fc8671
-      needleTemplate: !<reference.SceneObject> c185cd07-6339-4145-8f68-490536627f82
+      needleTemplate: !<reference.SceneObject> aec59ee6-6d16-43c3-a02c-d378daa54569
       reparentCompassMountToWorldCamera: true
       applyHudPlacementFromScript: true
-      compassHudLocalX: !<float> 6.000000
+      compassHudLocalX: !<float> 7.000000
       compassHudLocalY: !<float> 10.000000
       compassHudLocalZ: !<float> -42.000000
-      compassNeedleExtraEulerX: !<float> 90.000000
+      compassNeedleExtraEulerX: !<float> 0.000000
+      compassNeedleExtraEulerY: !<float> -90.000000
+      compassNeedleExtraEulerZ: !<float> 90.000000
       publishInterval: 0.200000
       staleSeconds: !<float> 5.000000
       limitCompassByDistance: false
       maxWorldDistance: !<float> 250.000000
-      needleUniformScale: !<float> 4.000000
+      needleUniformScale: !<float> 1.000000
       stackSpacing: !<float> 14.000000
       peerCompassEnabled: true
       compassBearingHorizontalOnly: false
@@ -21221,6 +21243,21 @@
   RotationAngle: 0
   Pivot: {x: 0.000000, y: 0.000000}
   ExtentsTarget: !<reference> 00000000-0000-0000-0000-000000000000
+- !<SceneObject/aec59ee6-6d16-43c3-a02c-d378daa54569>
+  PrefabRemaps:
+    []
+  Name: Arrow_Material.001_0
+  Enabled: false
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 1.130983, y: -3.607802, z: -2.843006}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 10.000000, y: 9.999999, z: 10.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 2e606350-b816-4915-a9e2-56796e2a63cc
 - !<SceneObject/aef560cb-9521-4feb-951e-a45eb96342ea>
   PrefabRemaps:
     []
@@ -24038,7 +24075,7 @@
   Enabled: true
   ScriptAsset: !<reference> e20fbb15-e0ef-44fa-ab49-90d50d34d9c2
   ScriptInputsDefault:
-    pinSparkleDistance: true
+    forcePinSparklesOn: true
     autoShareOnSoloConnect: true
     useSpectaclesSyncKit: true
     logNetworkDebug: true
@@ -24054,7 +24091,8 @@
       bluePinPrefab: !<reference.ObjectPrefab> 2a6f5655-457c-439e-86ea-d270a8577cf0
       redPinPrefab: !<reference.ObjectPrefab> 166a5dd9-b519-43ad-9886-096019ae0d1e
       pinSpawnOffset: !<Vec3> {x: 22.000000, y: 52.000000, z: 0.000000}
-      pinSparkleDistance: !<float> 150.000000
+      pinSparkleDistance: !<float> 250.000000
+      forcePinSparklesOn: false
       worldCamera: !<reference.Camera> 00000000-0000-0065-0000-000000000065
       autoShareOnSoloConnect: true
       useSpectaclesSyncKit: true
@@ -26646,11 +26684,12 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Position: {x: 0.000000, y: 44.741318, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 10.000000, y: 10.000000, z: 10.000000}
     HasSegmentScaleCompensation: false
   Children:
+    - !<own> aec59ee6-6d16-43c3-a02c-d378daa54569
     - !<own> c185cd07-6339-4145-8f68-490536627f82
     - !<own> 228c363b-84f0-4526-b508-8fa7029d6663
   Components:
@@ -30176,7 +30215,7 @@
   PrefabRemaps:
     []
   Name: vfx
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
