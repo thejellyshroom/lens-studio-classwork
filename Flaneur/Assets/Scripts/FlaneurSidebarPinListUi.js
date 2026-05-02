@@ -41,7 +41,7 @@
 // @input bool showPeerClosestPinDistance = true {"label":"Show other players' distance to nearest pin"}
 // @input float peerPositionStaleSeconds = 5 {"label":"Ignore peer positions older than (sec)"}
 // @input float worldUnitsPerMeter = 100 {"label":"World units per meter (100 if 1 unit = 1 cm)"}
-// @input float peerDistanceTextSize = 24 {"label":"Peer distance line: Text.size (Lens uses .size not .fontSize)"}
+// @input float peerDistanceTextSize = 36 {"label":"Peer distance line: size (higher = bigger; ~30–56 typical)"}
 // @input float sidebarPanelLocalY = -999 {"label":"Override Sidebar local Y (-999 = use scene/prefab value)"}
 
 var sidebarOpen = false;
@@ -67,6 +67,8 @@ var sharedNavPinLabel = "";
 var navSlotPinIds = ["", "", "", "", "", "", "", ""];
 var navSlotPinLabels = ["", "", "", "", "", "", "", ""];
 var lastPeerDistanceUiT = -999;
+/** Pin title row Text.size in `ensurePinRowVisuals`. */
+var PIN_ROW_NAME_TEXT_SIZE = 48;
 
 function findScrollWindowScriptComponent() {
   // Prefer user-provided list root (usually the scroll container).
@@ -666,6 +668,18 @@ function getPinIdFromRow(row) {
     var pfx = "FlaneurPinEntry__";
     if (nm.indexOf(pfx) === 0) return nm.substring(pfx.length);
   } catch (e) {}
+  try {
+    var rowScripts = getScriptComponents(row);
+    for (var si = 0; si < rowScripts.length; si++) {
+      var sc = rowScripts[si];
+      if (!sc || isNull(sc)) continue;
+      try {
+        if (sc.name === "FlaneurPinRowNavCallback" && sc.pinId != null && String(sc.pinId).length > 0) {
+          return String(sc.pinId);
+        }
+      } catch (eSc) {}
+    }
+  } catch (eNav) {}
   return "";
 }
 
@@ -817,25 +831,25 @@ function applyTextPointSize(textComp, px) {
   } catch (e2) {}
 }
 
-/** Baseline point size baked into the mesh; visual size = this × SceneObject local scale (Spectacles rows often ignore Text.size when Stretch + ScreenTransform). */
-var PEER_DISTANCE_BASE_TEXT_SIZE = 32;
+/** Default when `peerDistanceTextSize` is missing or invalid. */
+var PEER_DISTANCE_TEXT_DEFAULT = 36;
+/**
+ * Fixed Text.size on the component; Spectacles/UIKit often ignores it for this row, so we scale `PinPeerDistance`
+ * by (want / base). That keeps one slider and roughly linear sizing: doubling the input ~doubles on-screen height.
+ */
+var PEER_DISTANCE_MESH_BASE_PX = 22;
 
 function configurePeerDistanceTextVisual(peerSo, peerTxt) {
   if (!peerTxt || isNull(peerTxt)) return;
   var want = script.peerDistanceTextSize;
-  if (want === undefined || want === null || !isFinite(want) || want <= 0) want = PEER_DISTANCE_BASE_TEXT_SIZE;
+  if (want === undefined || want === null || !isFinite(want) || want <= 0) want = PEER_DISTANCE_TEXT_DEFAULT;
   try {
     peerTxt.sizeToFit = false;
   } catch (e0) {}
-  try {
-    if (typeof StretchMode !== "undefined" && StretchMode.Fit !== undefined) {
-      peerTxt.stretchMode = StretchMode.Fit;
-    }
-  } catch (eSm) {}
-  applyTextPointSize(peerTxt, PEER_DISTANCE_BASE_TEXT_SIZE);
-  var sc = want / PEER_DISTANCE_BASE_TEXT_SIZE;
-  if (sc < 0.35) sc = 0.35;
-  if (sc > 4.0) sc = 4.0;
+  applyTextPointSize(peerTxt, PEER_DISTANCE_MESH_BASE_PX);
+  var sc = want / PEER_DISTANCE_MESH_BASE_PX;
+  if (sc < 0.55) sc = 0.55;
+  if (sc > 6) sc = 6;
   if (peerSo && !isNull(peerSo)) {
     try {
       peerSo.getTransform().setLocalScale(new vec3(sc, sc, 1));
@@ -867,7 +881,12 @@ function refreshPinRowPeerDistanceLabels() {
       peerTxt.text = s;
       peerRoot.enabled = s.length > 0;
     } catch (eT) {}
-    configurePeerDistanceTextVisual(peerRoot, peerTxt);
+    if (s.length > 0) {
+      configurePeerDistanceTextVisual(peerRoot, peerTxt);
+      try {
+        setEnabledOnSubtree(peerRoot, true);
+      } catch (eSub) {}
+    }
   }
 
   var staticSlots = getAssignedStaticPinRowSlots();
@@ -903,7 +922,7 @@ function ensurePinRowVisuals(row) {
     peerSo.setParent(row);
   }
   try {
-    peerSo.getTransform().setLocalPosition(new vec3(3.8, -6.85, 0.05));
+    peerSo.getTransform().setLocalPosition(new vec3(8.8, -6.35, 0.05));
   } catch (ePeerPos) {}
 
   var imgComp = imgSo.getComponent("Component.Image") || imgSo.getComponent("Image");
@@ -937,7 +956,7 @@ function ensurePinRowVisuals(row) {
       textComp.renderOrder = 61;
       textComp.depthTest = false;
     } catch (eAlign) {}
-    applyTextPointSize(textComp, 48);
+    applyTextPointSize(textComp, PIN_ROW_NAME_TEXT_SIZE);
   }
 
   var peerTxt = peerSo.getComponent("Component.Text") || peerSo.getComponent("Text");
