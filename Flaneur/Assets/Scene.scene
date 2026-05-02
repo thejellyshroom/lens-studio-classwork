@@ -1545,7 +1545,7 @@
     "":
       rows: 3
       columns: 2
-      cellSize: !<Vec2> {x: 11.000000, y: 13.000000}
+      cellSize: !<Vec2> {x: 11.000000, y: 15.000000}
       cellPadding: !<Vec4> {x: 0.000000, y: 0.000000, z: 0.000000, w: 0.000000}
       layoutBy: !<float> 0.000000
   ScriptTypes:
@@ -1908,6 +1908,11 @@
   ScriptInputsDefault:
     sidebarToggleInteraction: true
     logUiDebug: true
+    showPeerClosestPinDistance: true
+    peerPositionStaleSeconds: true
+    worldUnitsPerMeter: true
+    peerDistanceTextSize: true
+    sidebarPanelLocalY: true
     directly: true
   ScriptTypesDefault:
     {}
@@ -1933,6 +1938,11 @@
       sidebarCloseIconTexture: !<reference.Texture> 73b20c35-a336-410d-9897-bdca3d55577c
       headFollowUiRoot: !<reference.SceneObject> 87a5226a-8ffe-40ee-9517-34cea112d12c
       logUiDebug: false
+      showPeerClosestPinDistance: true
+      peerPositionStaleSeconds: !<float> 5.000000
+      worldUnitsPerMeter: !<float> 100.000000
+      peerDistanceTextSize: !<float> 17.000000
+      sidebarPanelLocalY: !<float> -999.000000
       directly: !<RequiredType.fields> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     "":
@@ -1974,7 +1984,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -2353,7 +2363,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 2.266228, z: 0.000000}
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -6873,7 +6883,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -7069,7 +7079,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: -1.000000, z: -20.000000}
+    Position: {x: 0.000000, y: 24.000000, z: -20.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
@@ -8217,7 +8227,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -10377,7 +10387,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -12633,6 +12643,7 @@
   ScriptInputsDefault:
     worldMeshRayDistance: true
     placementPreviewEnabled: true
+    logPinInputDebug: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -12643,7 +12654,7 @@
       placementPreviewEnabled: true
       placementPreviewReticleTemplate: !<reference.SceneObject> b21a6c6b-c412-4bbb-9b11-69fc54c33b61
       placementPreviewReticleScale: !<float> 4.000000
-      logPinInputDebug: true
+      logPinInputDebug: false
   ScriptTypes:
     "":
       {}
@@ -15733,7 +15744,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -17154,7 +17165,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -19491,7 +19502,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -21311,7 +21322,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral
@@ -30653,7 +30664,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral

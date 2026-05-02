@@ -54,7 +54,7 @@
   ScriptInputs:
     "":
       _renderOrder: 0
-      _size: !<Vec3> {x: 10.000000, y: 12.000000, z: 3.000000}
+      _size: !<Vec3> {x: 10.000000, y: 14.000000, z: 3.000000}
       _inactive: false
       _playAudio: false
       _style: PrimaryNeutral

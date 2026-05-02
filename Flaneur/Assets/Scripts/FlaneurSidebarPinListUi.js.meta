@@ -31,6 +31,8 @@
     logUiDebug: false
     navigationRoot: false
     navigationTargetText: false
+    peerDistanceTextSize: false
+    peerPositionStaleSeconds: false
     pinEntryPrefab: false
     pinRowSlot0: false
     pinRowSlot1: false
@@ -40,13 +42,16 @@
     pinRowSlot5: false
     pinRowSlot6: false
     pinRowSlot7: false
+    showPeerClosestPinDistance: false
     sidebarBranchRoot: false
     sidebarCloseIconTexture: false
     sidebarCountBadge: false
     sidebarFab: false
     sidebarListRoot: false
     sidebarPanel: false
+    sidebarPanelLocalY: false
     sidebarToggleInteraction: false
+    worldUnitsPerMeter: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -76,6 +81,11 @@
       sidebarCloseIconTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
       headFollowUiRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       logUiDebug: false
+      showPeerClosestPinDistance: true
+      peerPositionStaleSeconds: !<float> 5.000000
+      worldUnitsPerMeter: !<float> 100.000000
+      peerDistanceTextSize: !<float> 17.000000
+      sidebarPanelLocalY: !<float> -999.000000
       directly: !<RequiredType.fields> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -

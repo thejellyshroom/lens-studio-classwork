@@ -6,6 +6,8 @@
  * - Build/reuse pin rows under a GridLayout, populated from global.flaneurPinApi RealtimeStore.
  * - Editor placeholder images when pin photos are unavailable.
  * - Reactions sync via RealtimeStore keys: react:<pinId>:<yourUserId>.
+ * - Per-pin line PinPeerDistance: for each *other* session member, the pin closest to them shows
+ *   "{name} is Xm away" (your own closest pin never shows a self line — only other people).
  *
  * Provides globals:
  * - global.flaneurPinStoreKeyUpdated(key)
@@ -36,6 +38,11 @@
 // @input Asset.Texture sidebarCloseIconTexture
 // @input SceneObject headFollowUiRoot
 // @input bool logUiDebug = false
+// @input bool showPeerClosestPinDistance = true {"label":"Show other players' distance to nearest pin"}
+// @input float peerPositionStaleSeconds = 5 {"label":"Ignore peer positions older than (sec)"}
+// @input float worldUnitsPerMeter = 100 {"label":"World units per meter (100 if 1 unit = 1 cm)"}
+// @input float peerDistanceTextSize = 24 {"label":"Peer distance line: Text.size (Lens uses .size not .fontSize)"}
+// @input float sidebarPanelLocalY = -999 {"label":"Override Sidebar local Y (-999 = use scene/prefab value)"}
 
 var sidebarOpen = false;
 var sidebarToggleBurstT = -999;
@@ -59,6 +66,7 @@ var sharedNavPinId = "";
 var sharedNavPinLabel = "";
 var navSlotPinIds = ["", "", "", "", "", "", "", ""];
 var navSlotPinLabels = ["", "", "", "", "", "", "", ""];
+var lastPeerDistanceUiT = -999;
 
 function findScrollWindowScriptComponent() {
   // Prefer user-provided list root (usually the scroll container).
@@ -649,11 +657,233 @@ function pinRowDisplayName(data) {
   return String(raw);
 }
 
+var PEER_STORE_PREFIX_UI = "peer:";
+
+function getPinIdFromRow(row) {
+  if (!row || isNull(row)) return "";
+  try {
+    var nm = String(row.name || "");
+    var pfx = "FlaneurPinEntry__";
+    if (nm.indexOf(pfx) === 0) return nm.substring(pfx.length);
+  } catch (e) {}
+  return "";
+}
+
+function distanceSqStored(ax, ay, az, bx, by, bz) {
+  var dx = bx - ax;
+  var dy = by - ay;
+  var dz = bz - az;
+  return dx * dx + dy * dy + dz * dz;
+}
+
+function distanceMetersStoredPoints(api, ax, ay, az, bx, by, bz, unitsPerMeter) {
+  if (unitsPerMeter === undefined || unitsPerMeter === null || unitsPerMeter <= 0) unitsPerMeter = 100;
+  try {
+    if (api && api.storedPointToWorld) {
+      var wa = api.storedPointToWorld(new vec3(ax, ay, az));
+      var wb = api.storedPointToWorld(new vec3(bx, by, bz));
+      var dx = wb.x - wa.x;
+      var dy = wb.y - wa.y;
+      var dz = wb.z - wa.z;
+      return Math.sqrt(dx * dx + dy * dy + dz * dz) / unitsPerMeter;
+    }
+  } catch (eW) {}
+  return Math.sqrt(distanceSqStored(ax, ay, az, bx, by, bz)) / unitsPerMeter;
+}
+
+function formatDistanceMeters(m) {
+  if (!isFinite(m) || m < 0) return "? m";
+  if (m < 10) return m.toFixed(1) + " m";
+  return Math.round(m) + " m";
+}
+
+function peerDisplayNameFromRecord(rec) {
+  if (!rec) return "Someone";
+  if (rec.n != null && String(rec.n).length > 0) return String(rec.n);
+  if (rec.name != null && String(rec.name).length > 0) return String(rec.name);
+  return "Someone";
+}
+
+/**
+ * For each *remote* peer (not local compass id), find their closest pin in stored space.
+ * Returns map pinId -> single label string (possibly multiple peers joined by " · ").
+ */
+function buildPinIdToClosestPeerLines(store, api) {
+  var out = {};
+  if (!store || !api || script.showPeerClosestPinDistance === false) return out;
+
+  var myPeerId = "";
+  try {
+    if (api.getPeerCompassStoreId) myPeerId = String(api.getPeerCompassStoreId() || "");
+  } catch (e1) {}
+  if (!myPeerId) {
+    try {
+      myPeerId = String(api.getLocalUserId() || "");
+    } catch (e2) {}
+  }
+
+  var pinPfx = "pin:";
+  try {
+    pinPfx = api.pinPrefix || pinPfx;
+  } catch (eP) {}
+
+  var keys = store.getAllKeys();
+  var pins = [];
+  var ki;
+  for (ki = 0; ki < keys.length; ki++) {
+    var kk = keys[ki];
+    if (kk.indexOf(pinPfx) !== 0) continue;
+    var jsn = store.getString(kk);
+    var d = null;
+    try {
+      d = jsn ? JSON.parse(jsn) : null;
+    } catch (eJ) {
+      d = null;
+    }
+    if (d && d.id != null && d.x !== undefined && d.y !== undefined && d.z !== undefined) {
+      pins.push(d);
+    }
+  }
+  if (!pins.length) return out;
+
+  var staleSec = script.peerPositionStaleSeconds;
+  if (staleSec === undefined || staleSec === null || staleSec <= 0) staleSec = 5;
+  var uPerM = script.worldUnitsPerMeter;
+  if (uPerM === undefined || uPerM === null || uPerM <= 0) uPerM = 100;
+  var now = getTime();
+
+  var byPinLists = {};
+
+  for (ki = 0; ki < keys.length; ki++) {
+    var pk = keys[ki];
+    if (typeof pk !== "string" || pk.indexOf(PEER_STORE_PREFIX_UI) !== 0) continue;
+    var peerKeyId = pk.substring(PEER_STORE_PREFIX_UI.length);
+    if (!peerKeyId || String(peerKeyId) === String(myPeerId)) continue;
+
+    var raw = store.getString(pk);
+    var rec = null;
+    try {
+      rec = raw ? JSON.parse(raw) : null;
+    } catch (eP) {
+      rec = null;
+    }
+    if (!rec || rec.stale === true) continue;
+    if (rec.t !== undefined && now - rec.t > staleSec) continue;
+    if (rec.x === undefined || rec.y === undefined || rec.z === undefined) continue;
+
+    var bestId = null;
+    var bestSq = -1;
+    var bestMeters = 0;
+    var pi;
+    for (pi = 0; pi < pins.length; pi++) {
+      var pin = pins[pi];
+      var pid = String(pin.id);
+      var sq = distanceSqStored(rec.x, rec.y, rec.z, pin.x, pin.y, pin.z);
+      if (!isFinite(sq)) continue;
+      var meters = distanceMetersStoredPoints(api, rec.x, rec.y, rec.z, pin.x, pin.y, pin.z, uPerM);
+      if (bestId === null || sq < bestSq || (sq === bestSq && pid < String(bestId))) {
+        bestSq = sq;
+        bestId = pin.id;
+        bestMeters = meters;
+      }
+    }
+    if (bestId === null) continue;
+    var line = peerDisplayNameFromRecord(rec) + " is " + formatDistanceMeters(bestMeters) + " away";
+    var bid = String(bestId);
+    if (!byPinLists[bid]) byPinLists[bid] = [];
+    byPinLists[bid].push(line);
+  }
+
+  for (var idk in byPinLists) {
+    if (!byPinLists.hasOwnProperty(idk)) continue;
+    out[idk] = byPinLists[idk].join(" · ");
+  }
+  return out;
+}
+
+/**
+ * Lens Studio Text uses `size` for point size; `fontSize` is not applied on many builds.
+ */
+function applyTextPointSize(textComp, px) {
+  if (!textComp || isNull(textComp) || px === undefined || px === null) return;
+  try {
+    textComp.sizeToFit = false;
+  } catch (e0) {}
+  try {
+    textComp.size = px;
+  } catch (e1) {}
+  try {
+    textComp.fontSize = px;
+  } catch (e2) {}
+}
+
+/** Baseline point size baked into the mesh; visual size = this × SceneObject local scale (Spectacles rows often ignore Text.size when Stretch + ScreenTransform). */
+var PEER_DISTANCE_BASE_TEXT_SIZE = 32;
+
+function configurePeerDistanceTextVisual(peerSo, peerTxt) {
+  if (!peerTxt || isNull(peerTxt)) return;
+  var want = script.peerDistanceTextSize;
+  if (want === undefined || want === null || !isFinite(want) || want <= 0) want = PEER_DISTANCE_BASE_TEXT_SIZE;
+  try {
+    peerTxt.sizeToFit = false;
+  } catch (e0) {}
+  try {
+    if (typeof StretchMode !== "undefined" && StretchMode.Fit !== undefined) {
+      peerTxt.stretchMode = StretchMode.Fit;
+    }
+  } catch (eSm) {}
+  applyTextPointSize(peerTxt, PEER_DISTANCE_BASE_TEXT_SIZE);
+  var sc = want / PEER_DISTANCE_BASE_TEXT_SIZE;
+  if (sc < 0.35) sc = 0.35;
+  if (sc > 4.0) sc = 4.0;
+  if (peerSo && !isNull(peerSo)) {
+    try {
+      peerSo.getTransform().setLocalScale(new vec3(sc, sc, 1));
+    } catch (eTr) {}
+  }
+}
+
+function refreshPinRowPeerDistanceLabels() {
+  var api = getApi();
+  var st = api && api.getStore ? api.getStore() : null;
+  var byPin = {};
+  if (script.showPeerClosestPinDistance !== false && api && st) {
+    byPin = buildPinIdToClosestPeerLines(st, api);
+  }
+
+  function applyOneRow(row) {
+    if (!row || isNull(row)) return;
+    try {
+      if (!row.enabled) return;
+    } catch (eEn) {}
+    var pid = getPinIdFromRow(row);
+    if (!pid) return;
+    var visuals = ensurePinRowVisuals(row);
+    var peerRoot = visuals.peerDistRoot;
+    var peerTxt = visuals.peerDistText;
+    if (!peerRoot || !peerTxt) return;
+    var s = byPin[pid] || "";
+    try {
+      peerTxt.text = s;
+      peerRoot.enabled = s.length > 0;
+    } catch (eT) {}
+    configurePeerDistanceTextVisual(peerRoot, peerTxt);
+  }
+
+  var staticSlots = getAssignedStaticPinRowSlots();
+  if (staticSlots.length > 0) {
+    for (var i = 0; i < staticSlots.length; i++) applyOneRow(staticSlots[i]);
+    return;
+  }
+  for (var j = 0; j < dynamicRows.length; j++) applyOneRow(dynamicRows[j]);
+}
+
 function ensurePinRowVisuals(row) {
-  if (!row || isNull(row)) return { img: null, text: null };
+  if (!row || isNull(row)) return { img: null, text: null, peerDistText: null, peerDistRoot: null };
 
   var imgSo = findNamed(row, "PinPhoto") || findNamedFuzzy(row, "pinphoto") || findNamed(row, "Logo") || findNamedFuzzy(row, "logo");
   var nameSo = findNamed(row, "PinName") || findNamedFuzzy(row, "pinname");
+  var peerSo = findNamed(row, "PinPeerDistance") || findNamedFuzzy(row, "pinpeerdistance");
 
   if (!imgSo) {
     imgSo = scene.createSceneObject("PinPhoto");
@@ -668,6 +898,13 @@ function ensurePinRowVisuals(row) {
     nameSo.setParent(row);
     nameSo.getTransform().setLocalPosition(new vec3(5.8, -4.9, 0.05));
   }
+  if (!peerSo) {
+    peerSo = scene.createSceneObject("PinPeerDistance");
+    peerSo.setParent(row);
+  }
+  try {
+    peerSo.getTransform().setLocalPosition(new vec3(3.8, -6.85, 0.05));
+  } catch (ePeerPos) {}
 
   var imgComp = imgSo.getComponent("Component.Image") || imgSo.getComponent("Image");
   if (!imgComp) {
@@ -696,20 +933,44 @@ function ensurePinRowVisuals(row) {
   }
   if (textComp) {
     try {
-      textComp.sizeToFit = false;
-      textComp.fontSize = 28;
       textComp.horizontalAlignment = HorizontalAlignment.Left;
       textComp.renderOrder = 61;
       textComp.depthTest = false;
     } catch (eAlign) {}
+    applyTextPointSize(textComp, 48);
   }
+
+  var peerTxt = peerSo.getComponent("Component.Text") || peerSo.getComponent("Text");
+  if (!peerTxt) {
+    try {
+      peerTxt = peerSo.createComponent("Component.Text");
+    } catch (ePc) {}
+  }
+  if (peerTxt) {
+    try {
+      peerTxt.horizontalAlignment = HorizontalAlignment.Left;
+      try {
+        if (typeof VerticalAlignment !== "undefined" && VerticalAlignment.Center !== undefined) {
+          peerTxt.verticalAlignment = VerticalAlignment.Center;
+        }
+      } catch (eVa) {}
+      peerTxt.renderOrder = 62;
+      peerTxt.depthTest = false;
+      peerTxt.text = "";
+    } catch (ePt0) {}
+    configurePeerDistanceTextVisual(peerSo, peerTxt);
+  }
+  try {
+    peerSo.enabled = false;
+  } catch (ePd0) {}
+
   try {
     if (imgComp) imgComp.renderOrder = 60;
   } catch (eRo1) {}
 
   setEnabledOnSubtree(imgSo, true);
   setEnabledOnSubtree(nameSo, true);
-  return { img: imgComp, text: textComp };
+  return { img: imgComp, text: textComp, peerDistText: peerTxt, peerDistRoot: peerSo };
 }
 
 function updatePinCountBadge() {
@@ -906,6 +1167,14 @@ function setupPinRow(row, data, store, api, slotIndex) {
       applyTextureToPinRowImage(visuals.img, script.sidebarCloseIconTexture);
     }
   }
+
+  if (visuals && visuals.peerDistRoot) {
+    try {
+      visuals.peerDistRoot.enabled = false;
+      if (visuals.peerDistText) visuals.peerDistText.text = "";
+    } catch (ePdHide) {}
+  }
+  lastPeerDistanceUiT = -999;
 }
 
 function requestPinListRebuild(reason) {
@@ -969,7 +1238,10 @@ function rebuildPinListImmediate(reason) {
     }
     updatePinCountBadge();
     refreshSpectaclesGridLayout(parent);
-    runNextFrame(function () { scrollSidebarToTop("rebuild-static"); });
+    runNextFrame(function () {
+      scrollSidebarToTop("rebuild-static");
+      refreshPinRowPeerDistanceLabels();
+    });
     return;
   }
 
@@ -996,6 +1268,7 @@ function rebuildPinListImmediate(reason) {
     for (var k = 0; k < dynamicRows.length; k++) setupPinRow(dynamicRows[k], rows[k], st, api, -1);
     refreshSpectaclesGridLayout(parent);
     scrollSidebarToTop("rebuild-dynamic");
+    refreshPinRowPeerDistanceLabels();
   });
 }
 
@@ -1008,7 +1281,10 @@ function onStoreKeyUpdated(key) {
   if (!api) return;
   var st = api.getStore();
   if (!st) return;
-  if (typeof key === "string" && key.indexOf("peer:") === 0 && script.logUiDebug !== true) return;
+  if (typeof key === "string" && key.indexOf("peer:") === 0) {
+    if (sidebarOpen && script.showPeerClosestPinDistance !== false) lastPeerDistanceUiT = -999;
+    if (script.logUiDebug !== true) return;
+  }
 
   if (typeof key === "string" && api.navPrefix && key.indexOf(String(api.navPrefix)) === 0) {
     var peerId = key.substring(String(api.navPrefix).length);
@@ -1084,6 +1360,18 @@ function enableAncestorsUpToDepth(leaf, maxUp) {
   }
 }
 
+function applySidebarPanelLocalYFromScript() {
+  var y = script.sidebarPanelLocalY;
+  if (y === undefined || y === null || y <= -500) return;
+  var pan = script.sidebarPanel;
+  if (!pan || isNull(pan)) return;
+  try {
+    var tr = pan.getTransform();
+    var lp = tr.getLocalPosition();
+    tr.setLocalPosition(new vec3(lp.x, y, lp.z));
+  } catch (ePy) {}
+}
+
 function applySidebarOpenState(isOpen) {
   var wasOpen = sidebarOpen;
   sidebarOpen = !!isOpen;
@@ -1100,6 +1388,8 @@ function applySidebarOpenState(isOpen) {
     try { pan.enabled = sidebarOpen; } catch (e2) {}
   }
   if (sidebarOpen) {
+    applySidebarPanelLocalYFromScript();
+    lastPeerDistanceUiT = -999;
     scrollSidebarToTop("open");
     requestPinListRebuild("open");
   }
@@ -1243,5 +1533,12 @@ script.createEvent("TurnOnEvent").bind(function () {
 
 script.createEvent("UpdateEvent").bind(function () {
   releasePinDropSuppressionIfExpired();
+  if (sidebarOpen && script.showPeerClosestPinDistance !== false) {
+    var t = getTime();
+    if (t - lastPeerDistanceUiT >= 0.2) {
+      lastPeerDistanceUiT = t;
+      refreshPinRowPeerDistanceLabels();
+    }
+  }
 });
 
