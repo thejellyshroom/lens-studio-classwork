@@ -5307,7 +5307,6 @@
     capturePinPhotos: true
     previewSnapshotTexture: true
     usePreviewSceneTargetFallback: true
-    maxSnapshotBase64Chars: true
     logPinInputDebug: true
   ScriptTypesDefault:
     {}
@@ -5317,8 +5316,8 @@
       previewSnapshotTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
       usePreviewSceneTargetFallback: true
       useCameraModuleOnDevice: true
-      snapshotImageSmallerDimension: 256
-      maxSnapshotBase64Chars: 60000
+      snapshotImageSmallerDimension: 160
+      maxSnapshotBase64Chars: 12000
       logPinInputDebug: false
   ScriptTypes:
     "":
@@ -12634,7 +12633,6 @@
   ScriptInputsDefault:
     worldMeshRayDistance: true
     placementPreviewEnabled: true
-    logPinInputDebug: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -12645,7 +12643,7 @@
       placementPreviewEnabled: true
       placementPreviewReticleTemplate: !<reference.SceneObject> b21a6c6b-c412-4bbb-9b11-69fc54c33b61
       placementPreviewReticleScale: !<float> 4.000000
-      logPinInputDebug: false
+      logPinInputDebug: true
   ScriptTypes:
     "":
       {}

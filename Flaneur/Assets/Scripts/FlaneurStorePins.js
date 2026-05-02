@@ -30,6 +30,8 @@
 
 var FLANEUR_STORE_ID = "flaneur_pins_v1";
 var PIN_KEY_PREFIX = "pin:";
+/** Raw base64 thumbnail (separate key so pin:* JSON stays small and replicates reliably). */
+var PIN_IMG_PREFIX = "pinimg:";
 var PEER_KEY_PREFIX = "peer:";
 var REACT_KEY_PREFIX = "react:";
 var NAV_KEY_PREFIX = "nav:";
@@ -418,6 +420,7 @@ function publishGlobalApi() {
     global.flaneurPinApi = {
       getStore: function () { return flaneurStore; },
       pinPrefix: PIN_KEY_PREFIX,
+      pinImgPrefix: PIN_IMG_PREFIX,
       reactPrefix: REACT_KEY_PREFIX,
       navPrefix: NAV_KEY_PREFIX,
       getLocalUserId: function () { return getFlaneurPinOwnerIdForStore(); },
@@ -1040,10 +1043,16 @@ function commitPinAtWorldPosition(worldVec3) {
     if (typeof global !== "undefined" && global.flaneurPinShowToast) global.flaneurPinShowToast((localDisplayName || "You") + " dropped a pin!");
   } catch (e) {}
   try {
-    if (typeof global !== "undefined" && typeof global.flaneurCapturePinPhotoAsync === "function" && script.capturePinPhotos !== false) {
-      global.flaneurCapturePinPhotoAsync(rec.id);
+    if (typeof global !== "undefined" && script.capturePinPhotos !== false) {
+      if (typeof global.flaneurCapturePinPhotoAsync === "function") {
+        global.flaneurCapturePinPhotoAsync(rec.id);
+      } else {
+        print("[Flaneur][pins] flaneurCapturePinPhotoAsync missing — enable FlaneurPinPhotoCapture on an active SceneObject.");
+      }
     }
-  } catch (eCap) {}
+  } catch (eCap) {
+    print("[Flaneur][pins] pin photo capture failed: " + eCap);
+  }
 }
 
 script.createEvent("TurnOnEvent").bind(function () {

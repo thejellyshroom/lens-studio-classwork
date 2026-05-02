@@ -774,6 +774,16 @@ function setupPinRow(row, data, store, api, slotIndex) {
   var label = pinRowDisplayName(data);
 
   var rawImg = data && data.img != null ? String(data.img) : "";
+  if (!rawImg && store && api && data && data.id) {
+    var imgPfx = "pinimg:";
+    try {
+      imgPfx = api.pinImgPrefix || imgPfx;
+    } catch (ePfx) {}
+    try {
+      var aux = store.getString(imgPfx + String(data.id)) || "";
+      if (aux) rawImg = aux;
+    } catch (eAux) {}
+  }
   var wantPlaceholder = false;
   try { wantPlaceholder = global.deviceInfoSystem && global.deviceInfoSystem.isEditor && global.deviceInfoSystem.isEditor(); } catch (eEd) {}
 
@@ -879,7 +889,15 @@ function setupPinRow(row, data, store, api, slotIndex) {
 
   if (rawImg.length > 0 && visuals && visuals.img) {
     var payload2 = normalizeStoreImageBase64(rawImg);
-    Base64.decodeTextureAsync(payload2, function (tex) { applyTextureToPinRowImage(visuals.img, tex); }, function () {});
+    Base64.decodeTextureAsync(
+      payload2,
+      function (tex) {
+        applyTextureToPinRowImage(visuals.img, tex);
+      },
+      function (err) {
+        if (script.logUiDebug) dbgUi("pin img decode failed pinId=" + data.id + " err=" + err + " len=" + payload2.length);
+      }
+    );
   } else if (visuals && visuals.img) {
     var localTex = getLocalSnapshotTexture(data.id);
     if (localTex && !isNull(localTex)) {
@@ -1038,6 +1056,14 @@ function onStoreKeyUpdated(key) {
   if (key.indexOf(api.reactPrefix) === 0) {
     if (sidebarOpen) requestPinListRebuild("react");
     updatePinCountBadge();
+    return;
+  }
+  var pinImgPfx = "pinimg:";
+  try {
+    pinImgPfx = api.pinImgPrefix || pinImgPfx;
+  } catch (eImgPfx) {}
+  if (typeof key === "string" && key.indexOf(pinImgPfx) === 0) {
+    if (sidebarOpen) requestPinListRebuild("pinimg");
     return;
   }
   if (key.indexOf(api.pinPrefix) !== 0) return;
