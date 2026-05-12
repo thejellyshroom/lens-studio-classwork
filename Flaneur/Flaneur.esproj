@@ -15,14 +15,14 @@ metaInfo:
     []
   lensName: Flaneur
   lensDescriptors:
-    []
+    - GEN_AI_ICON
   lensApplicability:
     - Front
     - Back
   lensClientCompatibilities:
     - Spectacles
   platformBundlesEnabled: false
-  iconHash: ""
+  iconHash: 562f294da9acadd6c027f37bb5e0d706
   videoPreviewHash: ""
   fromTemplateName: Custom Locations
   fromTemplateUrl: Lens Studio 5.15.4.26022322
